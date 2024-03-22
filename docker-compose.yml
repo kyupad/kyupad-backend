@@ -1,0 +1,14 @@
+version: '3.8'
+services:
+  kyupad-api:
+    container_name: kyupad-api
+    build: .
+    restart: always
+    ports:
+      - "80:80"
+    volumes:
+      - /usr/kyupad-api/logs/kyupad-api:/usr/src/app/kyupad-api/logs
+networks:
+  default:
+    external:
+      name: kyupad-api-nw
