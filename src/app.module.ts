@@ -4,18 +4,21 @@ import { AppService } from './app.service';
 import { ConfigModule } from '@nestjs/config';
 import env from './config/env.config';
 import { envSchema } from '@/validation/env.validation';
-import { HealthModule } from './modules/health/health.module';
+import { HealthModule } from '@modules/health/health.module';
 // import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { APP_FILTER, RouterModule } from '@nestjs/core';
-import { AllExceptionsFilter } from './filters/all-exceptions.filter';
-import { AuthModule } from './usecases/auth/auth.module';
-import { PingModule } from './modules/ping/ping.module';
+import { AllExceptionsFilter } from '@filters/all-exceptions.filter';
+import { AuthModule } from '@usecases/auth/auth.module';
+import { PingModule } from '@modules/ping/ping.module';
 import { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY } from './constants';
 import { ClsModule } from 'nestjs-cls';
-import { parseCookies } from './helpers/common.helper';
+import { parseCookies } from '@helpers/common.helper';
 import { SigninDataModule, VerifySiwsModule } from '@usecases/auth/solana';
-import { RefreshModule } from './usecases/auth/refresh/refresh.module';
+import { RefreshModule } from '@usecases/auth/refresh/refresh.module';
 import { MongooseModule } from '@nestjs/mongoose';
+import { AdminModule } from '@usecases/admin/admin.module';
+import { CollectionsModule } from '@usecases/admin/nft';
+import { SeasonModule } from '@usecases/admin/season/season.module';
 
 @Module({
   imports: [
@@ -35,6 +38,7 @@ import { MongooseModule } from '@nestjs/mongoose';
     // ]),
     AuthModule,
     PingModule,
+    AdminModule,
     ClsModule.forRoot({
       middleware: {
         mount: true,
@@ -69,6 +73,17 @@ import { MongooseModule } from '@nestjs/mongoose';
           { path: 'signin-data', module: SigninDataModule },
           { path: 'verify-siws', module: VerifySiwsModule },
           { path: 'refresh', module: RefreshModule },
+        ],
+      },
+      {
+        path: 'admin',
+        module: AdminModule,
+        children: [
+          { path: 'nft/collections', module: CollectionsModule },
+          {
+            path: 'season',
+            module: SeasonModule,
+          },
         ],
       },
     ]),
