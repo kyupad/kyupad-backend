@@ -19,6 +19,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { AdminModule } from '@usecases/admin/admin.module';
 import { CollectionsModule } from '@usecases/admin/nft';
 import { SeasonModule } from '@usecases/admin/season/season.module';
+import { ProjectsModule } from './usecases/projects/projects/projects.module';
 
 @Module({
   imports: [
@@ -39,6 +40,7 @@ import { SeasonModule } from '@usecases/admin/season/season.module';
     AuthModule,
     PingModule,
     AdminModule,
+    ProjectsModule,
     ClsModule.forRoot({
       middleware: {
         mount: true,
@@ -85,6 +87,10 @@ import { SeasonModule } from '@usecases/admin/season/season.module';
             module: SeasonModule,
           },
         ],
+      },
+      {
+        path: 'projects',
+        module: ProjectsModule,
       },
     ]),
   ],

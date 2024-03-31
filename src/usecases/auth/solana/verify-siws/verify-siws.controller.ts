@@ -15,7 +15,7 @@ import bs58 from 'bs58';
 import { verifySignIn } from '@solana/wallet-standard-util';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
-import { UserService } from '@/models/user/user.service';
+import { UserService } from '@/services/user/user.service';
 
 @Controller()
 export class VerifySiwsController {

@@ -10,11 +10,11 @@ export class UserService {
   ) {}
 
   async upsert(user: User): Promise<User> {
-    const result = this.userModel.findByIdAndUpdate(user._id, user, {
+    const result = await this.userModel.findByIdAndUpdate(user._id, user, {
       upsert: true,
       new: true,
     });
 
-    return (await result).save();
+    return result;
   }
 }
