@@ -59,6 +59,9 @@ export class Season {
 
   @Prop({ type: 'string' })
   error_reason?: string;
+
+  @Prop({ required: true, type: String })
+  created_by: string;
 }
 
 export const SeasonSchema = SchemaFactory.createForClass(Season);

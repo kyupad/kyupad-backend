@@ -13,7 +13,14 @@ export class NftService {
 
   async getAllCollection(): Promise<NftCollection[]> {
     const result = await this.nftCollectionModel.find();
-    return result;
+    return result || [];
+  }
+
+  async getCollectionByAddress(address: string[]): Promise<NftCollection[]> {
+    const result = await this.nftCollectionModel.find({
+      address: { $in: address },
+    });
+    return result || [];
   }
 
   async createCollections(
@@ -23,6 +30,7 @@ export class NftService {
       return {
         name: input.name,
         address: input.address,
+        created_by: 'ADMIN', //FIXME: Sau khi làm chức năng Auth thì update
       };
     });
     await this.nftCollectionModel.insertMany(collections);

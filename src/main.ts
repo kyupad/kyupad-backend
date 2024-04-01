@@ -22,6 +22,7 @@ async function bootstrap() {
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule,
     new FastifyAdapter({ logger: false }),
+    { rawBody: true },
   );
 
   const { httpAdapter } = app.get(HttpAdapterHost);
@@ -32,7 +33,7 @@ async function bootstrap() {
     defaultVersion: 'v1',
     prefix: false,
   });
-
+  app.useBodyParser('json');
   await app.register(cors);
   await app.register(compression, { encodings: ['gzip', 'deflate'] });
   await app.register(fastifyCsrf);

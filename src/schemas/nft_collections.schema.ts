@@ -17,6 +17,9 @@ export class NftCollection {
 
   @Prop({ required: true, type: String })
   name: string;
+
+  @Prop({ required: true, type: String })
+  created_by: string;
 }
 
 export const NftCollectionSchema = SchemaFactory.createForClass(NftCollection);
