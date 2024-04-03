@@ -60,7 +60,6 @@ async function bootstrap() {
         },
         'jwt-auth',
       )
-      .addTag('kyupad')
       .build();
     const document = SwaggerModule.createDocument(app, config);
     SwaggerModule.setup('swagger', app, document);

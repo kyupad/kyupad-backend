@@ -6,23 +6,25 @@ export type ProjectDocument = HydratedDocument<Project>;
 
 @Schema({ timestamps: true })
 export class Project {
+  @ApiProperty()
   @Prop({ auto: true, type: mongoose.Schema.Types.ObjectId })
   _id?: string;
-  @ApiProperty({ default: 'Bunny Protocol' })
+  @ApiProperty({ default: 'Project A' })
   @Prop()
   name: string;
-  @ApiProperty({ default: 'BPT' })
+  @ApiProperty({ default: 'project-a' })
+  @Prop()
+  slug: string;
+  @ApiProperty({ default: 'XXX' })
   @Prop()
   symbol: string;
   @ApiProperty({
-    default:
-      'https://kyupad-dev-common.s3.ap-southeast-1.amazonaws.com/public/bird.png',
+    default: 'https://dev-bucket.kyupad.xyz/public/kyu.jpeg',
   })
   @Prop()
   logo: string;
   @ApiProperty({
-    default:
-      'https://kyupad-dev-common.s3.ap-southeast-1.amazonaws.com/public/meow.jpeg',
+    default: 'https://dev-bucket.kyupad.xyz/public/meow.jpeg',
   })
   @Prop()
   thumbnail: string;
@@ -30,8 +32,7 @@ export class Project {
   @Prop()
   tags?: string[];
   @ApiProperty({
-    default:
-      'Dive into intense multiplayer battles in the most competitive space shooter ever!',
+    default: 'Short description of project!',
   })
   @Prop()
   short_description: string;

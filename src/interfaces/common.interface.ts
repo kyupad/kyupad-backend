@@ -15,7 +15,7 @@ export function withBaseResponse<TBase extends Constructor>(
     message?: string;
 
     @ApiProperty({
-      required: true,
+      required: false,
       type: Base,
       ...options,
     })

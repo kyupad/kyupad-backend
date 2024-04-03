@@ -4,7 +4,9 @@ import { ConfigService } from '@nestjs/config';
 import crypto from 'crypto';
 import { SolanaSignInInput } from '@solana/wallet-standard-features';
 import { CHAIN_ID } from '@/constants';
+import { ApiTags } from '@nestjs/swagger';
 
+@ApiTags('auth')
 @Controller()
 export class SigninDataController {
   private readonly WEB_URL: string;

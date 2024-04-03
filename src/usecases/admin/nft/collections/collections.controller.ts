@@ -1,10 +1,11 @@
 import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { INftCollectionsResponse } from '@usecases/admin/nft/collections/collections.response';
 import { CreateCollectionsInput } from '@usecases/admin/nft/collections/collections.input';
 import { AuthGuard } from '@usecases/admin/auth/auth.guard';
 import { NftService } from '@/services/nft/nft.service';
 
+@ApiTags('admin')
 @Controller()
 export class CollectionsController {
   constructor(private readonly nftService: NftService) {}

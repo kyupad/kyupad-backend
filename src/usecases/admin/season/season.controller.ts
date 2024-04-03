@@ -7,12 +7,18 @@ import {
   Req,
   UseGuards,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiOkResponse, ApiParam } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiOkResponse,
+  ApiParam,
+  ApiTags,
+} from '@nestjs/swagger';
 import { AuthGuard } from '@usecases/admin/auth/auth.guard';
 import { CreateSeasonInput } from '@usecases/admin/season/season.input';
 import { SeasonService } from '@/services/season/season.service';
 import { SeasonDetailResponse } from '@usecases/admin/season/season.response';
 
+@ApiTags('admin')
 @Controller()
 export class SeasonController {
   constructor(private readonly seasonService: SeasonService) {}

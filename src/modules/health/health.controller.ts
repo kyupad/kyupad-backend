@@ -1,5 +1,6 @@
 import { Controller, Get } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { ApiTags } from '@nestjs/swagger';
 import {
   DiskHealthIndicator,
   HealthCheck,
@@ -8,6 +9,7 @@ import {
   MemoryHealthIndicator,
 } from '@nestjs/terminus';
 
+@ApiTags('monitoring')
 @Controller()
 export class HealthController {
   private readonly baseUrl: string;

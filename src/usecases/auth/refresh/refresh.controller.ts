@@ -9,7 +9,9 @@ import {
 import { IRefreshResponse } from './refresh.type';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
+import { ApiTags } from '@nestjs/swagger';
 
+@ApiTags('auth')
 @Controller()
 export class RefreshController {
   private readonly JWT_ACCESS_TOKEN_SECRET: string;

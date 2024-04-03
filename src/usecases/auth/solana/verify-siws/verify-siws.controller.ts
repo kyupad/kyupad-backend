@@ -16,7 +16,9 @@ import { verifySignIn } from '@solana/wallet-standard-util';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { UserService } from '@/services/user/user.service';
+import { ApiTags } from '@nestjs/swagger';
 
+@ApiTags('auth')
 @Controller()
 export class VerifySiwsController {
   private logger = new Logger(VerifySiwsController.name);

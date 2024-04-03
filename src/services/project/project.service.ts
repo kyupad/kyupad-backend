@@ -18,11 +18,21 @@ export class ProjectService {
     return result;
   }
 
-  async findAllUpcomingLaunches(): Promise<Project[]> {
+  async findAllUpcoming(): Promise<Project[]> {
+    const result = await this.projectModel
+      .find()
+      .where('registration_at')
+      .gte(dayjs.utc().valueOf())
+      .sort({ registration_at: 'asc' });
+    return result;
+  }
+
+  async findAllSuccess(): Promise<Project[]> {
     const result = await this.projectModel
       .find()
       .where('claim_at')
-      .gte(dayjs.utc().valueOf());
+      .lt(dayjs.utc().valueOf())
+      .sort({ claim_at: 'asc' });
     return result;
   }
 }
