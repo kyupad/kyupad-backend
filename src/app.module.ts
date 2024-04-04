@@ -20,6 +20,12 @@ import { AdminModule } from '@usecases/admin/admin.module';
 import { CollectionsModule } from '@usecases/admin/nft';
 import { SeasonModule } from '@usecases/admin/season/season.module';
 import { ProjectsModule } from './usecases/projects/projects/projects.module';
+import { UserSeasonModule } from '@usecases/season/user_season.module';
+import { UserPoolModule } from '@usecases/pools/user_pool.module';
+import { UserRegistrationModule } from '@usecases/registration/user_registration.module';
+import { UserInvestmentsModule } from '@usecases/investments/user_investments.module';
+import { UserParticipationModule } from '@usecases/investments/participations/participation_investments.module';
+import { UserVestingModule } from '@usecases/vesting/user_vesting.module';
 
 @Module({
   imports: [
@@ -41,6 +47,12 @@ import { ProjectsModule } from './usecases/projects/projects/projects.module';
     PingModule,
     AdminModule,
     ProjectsModule,
+    UserSeasonModule,
+    UserPoolModule,
+    UserRegistrationModule,
+    UserInvestmentsModule,
+    UserParticipationModule,
+    UserVestingModule,
     ClsModule.forRoot({
       middleware: {
         mount: true,
@@ -91,6 +103,32 @@ import { ProjectsModule } from './usecases/projects/projects/projects.module';
       {
         path: 'projects',
         module: ProjectsModule,
+      },
+      {
+        path: 'seasons',
+        module: UserSeasonModule,
+      },
+      {
+        path: 'pools',
+        module: UserPoolModule,
+      },
+      {
+        path: 'registration',
+        module: UserRegistrationModule,
+      },
+      {
+        path: 'vesting',
+        module: UserVestingModule,
+      },
+      {
+        path: 'investments',
+        module: UserInvestmentsModule,
+        children: [
+          {
+            path: 'participation',
+            module: UserParticipationModule,
+          },
+        ],
       },
     ]),
   ],
