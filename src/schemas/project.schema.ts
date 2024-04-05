@@ -7,7 +7,7 @@ export type ProjectDocument = HydratedDocument<Project>;
 @Schema({ timestamps: true })
 export class Project {
   @ApiProperty()
-  @Prop({ auto: true, type: mongoose.Schema.Types.ObjectId })
+  @Prop({ auto: true, type: mongoose.Schema.Types.ObjectId, required: true })
   _id?: string;
   @ApiProperty({ default: 'Project A' })
   @Prop()

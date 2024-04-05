@@ -12,12 +12,10 @@ export class AllExceptionsFilter extends BaseExceptionFilter {
 
   catch(exception: any, host: ArgumentsHost) {
     this.logger.error(
-      exception.status !== 400 ? exception.stack : exception.message,
+      exception.status === 500 ? exception.stack : exception.message,
     );
     super.catch(
-      (!exception?.response || exception?.response?.error) &&
-        !exception?.response?.info &&
-        exception.status !== 400
+      exception.status === 500
         ? new InternalServerErrorException("Ops. Meow's fault!")
         : exception,
       host,

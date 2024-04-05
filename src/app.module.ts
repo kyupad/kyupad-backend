@@ -19,13 +19,15 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { AdminModule } from '@usecases/admin/admin.module';
 import { CollectionsModule } from '@usecases/admin/nft';
 import { SeasonModule } from '@usecases/admin/season/season.module';
-import { ProjectsModule } from './usecases/projects/projects/projects.module';
 import { UserSeasonModule } from '@usecases/season/user_season.module';
 import { UserPoolModule } from '@usecases/pools/user_pool.module';
 import { UserRegistrationModule } from '@usecases/registration/user_registration.module';
 import { UserInvestmentsModule } from '@usecases/investments/user_investments.module';
 import { UserParticipationModule } from '@usecases/investments/participations/participation_investments.module';
 import { UserVestingModule } from '@usecases/vesting/user_vesting.module';
+import { ProjectListModule } from './usecases/project/list/list.module';
+import { ProjectDetailModule } from './usecases/project/detail/detail.module';
+import { AdminProjectModule } from './usecases/admin/project/project.module';
 
 @Module({
   imports: [
@@ -46,13 +48,14 @@ import { UserVestingModule } from '@usecases/vesting/user_vesting.module';
     AuthModule,
     PingModule,
     AdminModule,
-    ProjectsModule,
     UserSeasonModule,
     UserPoolModule,
     UserRegistrationModule,
     UserInvestmentsModule,
     UserParticipationModule,
     UserVestingModule,
+    ProjectListModule,
+    ProjectDetailModule,
     ClsModule.forRoot({
       middleware: {
         mount: true,
@@ -98,11 +101,19 @@ import { UserVestingModule } from '@usecases/vesting/user_vesting.module';
             path: 'season',
             module: SeasonModule,
           },
+          {
+            path: 'project',
+            module: AdminProjectModule,
+          },
         ],
       },
       {
         path: 'projects',
-        module: ProjectsModule,
+        module: ProjectListModule,
+      },
+      {
+        path: 'project/:slug',
+        module: ProjectDetailModule,
       },
       {
         path: 'seasons',

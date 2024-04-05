@@ -34,7 +34,10 @@ async function bootstrap() {
     prefix: false,
   });
   app.useBodyParser('json');
-  await app.register(cors);
+  await app.register(cors, {
+    credentials: true,
+    origin: ['http://localhost:3000'],
+  });
   await app.register(compression, { encodings: ['gzip', 'deflate'] });
   await app.register(fastifyCsrf);
   await app.register(helmet);

@@ -1,31 +1,17 @@
 import { ProjectService } from '@/services/project/project.service';
-import { Project } from '@/schemas/project.schema';
-import { Body, Controller, Get, Post, Query } from '@nestjs/common';
-import { GetProjectsResponse } from './projects.response';
-import {
-  ApiTags,
-  ApiCreatedResponse,
-  ApiOkResponse,
-  ApiQuery,
-} from '@nestjs/swagger';
-import { ProjectTime } from './projects.type';
+import { Controller, Get, Query } from '@nestjs/common';
+import { GetProjectsResponse } from './list.response';
+import { ApiTags, ApiOkResponse, ApiQuery } from '@nestjs/swagger';
+import { ProjectTime } from './list.type';
 
-@ApiTags('projects')
+@ApiTags('project')
 @Controller()
-export class ProjectsController {
+export class ProjectListController {
   constructor(private readonly projectsService: ProjectService) {}
-
-  @ApiCreatedResponse({
-    description: 'The project has been successfully created.',
-  })
-  @Post()
-  async create(@Body() project: Project): Promise<void> {
-    await this.projectsService.create(project);
-  }
 
   @ApiOkResponse({
     type: GetProjectsResponse,
-    description: 'List of upcoming launches.',
+    description: 'List of project.',
   })
   @ApiQuery({ enum: ProjectTime, name: 'time', required: false })
   @Get()
