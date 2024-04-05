@@ -7,4 +7,5 @@ export default () => ({
   JWT_REFRESH_TOKEN_SECRET: process.env.JWT_REFRESH_TOKEN_SECRET,
   MONGODB_URI: process.env.MONGODB_URI,
   PORT: process.env.PORT || 8080,
+  ALLOWED_ORIGINS: process.env.ALLOWED_ORIGINS,
 });

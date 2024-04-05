@@ -24,6 +24,7 @@ async function bootstrap() {
     new FastifyAdapter({ logger: false }),
     { rawBody: true },
   );
+  const configService = app.get(ConfigService);
 
   const { httpAdapter } = app.get(HttpAdapterHost);
   app.useGlobalPipes(new ValidationPipe({ disableErrorMessages: false }));
@@ -36,7 +37,7 @@ async function bootstrap() {
   app.useBodyParser('json');
   await app.register(cors, {
     credentials: true,
-    origin: ['http://localhost:3000'],
+    origin: configService.get('ALLOWED_ORIGINS').split(','),
   });
   await app.register(compression, { encodings: ['gzip', 'deflate'] });
   await app.register(fastifyCsrf);
@@ -46,7 +47,6 @@ async function bootstrap() {
     prefix: '/public/',
   });
   await app.register(fastifyCookie);
-  const configService = app.get(ConfigService);
   if (process.env.SWAGGER_ENABLE === 'true') {
     const config = new DocumentBuilder()
       .setTitle('Kyupad - OpenAPI')

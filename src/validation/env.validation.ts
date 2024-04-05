@@ -10,6 +10,7 @@ const envSchema = Joi.object({
   JWT_REFRESH_TOKEN_SECRET: Joi.string().required(),
   MONGODB_URI: Joi.string().required(),
   PORT: Joi.number().required().default(8080),
+  ALLOWED_ORIGINS: Joi.string().required(),
 });
 
 export { envSchema };
