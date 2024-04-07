@@ -5,11 +5,18 @@ import {
   NftCollection,
   NftCollectionSchema,
 } from '@schemas/nft_collections.schema';
+import {
+  NftWhiteList,
+  NftWhiteListSchema,
+} from '@schemas/nft_whitelists.schema';
 
 @Module({
   imports: [
     MongooseModule.forFeature([
       { name: NftCollection.name, schema: NftCollectionSchema },
+    ]),
+    MongooseModule.forFeature([
+      { name: NftWhiteList.name, schema: NftWhiteListSchema },
     ]),
   ],
   controllers: [],

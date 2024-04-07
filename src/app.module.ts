@@ -28,6 +28,7 @@ import { UserVestingModule } from '@usecases/vesting/user_vesting.module';
 import { ProjectListModule } from './usecases/project/list/list.module';
 import { ProjectDetailModule } from './usecases/project/detail/detail.module';
 import { AdminProjectModule } from './usecases/admin/project/project.module';
+import { WhiteListModule } from '@usecases/admin/nft/whitelist/whitelist.module';
 
 @Module({
   imports: [
@@ -56,6 +57,7 @@ import { AdminProjectModule } from './usecases/admin/project/project.module';
     UserVestingModule,
     ProjectListModule,
     ProjectDetailModule,
+    WhiteListModule,
     ClsModule.forRoot({
       middleware: {
         mount: true,
@@ -97,6 +99,7 @@ import { AdminProjectModule } from './usecases/admin/project/project.module';
         module: AdminModule,
         children: [
           { path: 'nft/collections', module: CollectionsModule },
+          { path: 'nft/whitelist', module: WhiteListModule },
           {
             path: 'season',
             module: SeasonModule,
