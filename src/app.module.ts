@@ -29,6 +29,7 @@ import { ProjectListModule } from './usecases/project/list/list.module';
 import { ProjectDetailModule } from './usecases/project/detail/detail.module';
 import { AdminProjectModule } from './usecases/admin/project/project.module';
 import { WhiteListModule } from '@usecases/admin/nft/whitelist/whitelist.module';
+import { FungibleModule } from '@usecases/admin/fungible/fungible.module';
 
 @Module({
   imports: [
@@ -58,6 +59,7 @@ import { WhiteListModule } from '@usecases/admin/nft/whitelist/whitelist.module'
     ProjectListModule,
     ProjectDetailModule,
     WhiteListModule,
+    FungibleModule,
     ClsModule.forRoot({
       middleware: {
         mount: true,
@@ -107,6 +109,10 @@ import { WhiteListModule } from '@usecases/admin/nft/whitelist/whitelist.module'
           {
             path: 'project',
             module: AdminProjectModule,
+          },
+          {
+            path: 'fungible',
+            module: FungibleModule,
           },
         ],
       },

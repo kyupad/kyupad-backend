@@ -1,5 +1,5 @@
 import { Controller, Get, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import { AuthGuard } from '@usecases/admin/auth/auth.guard';
 import { NftService } from '@/services/nft/nft.service';
 import { NftWhiteListResponse } from '@usecases/admin/nft/whitelist/whitelist.response';
@@ -12,6 +12,7 @@ export class WhiteListController {
   @Get()
   @UseGuards(AuthGuard)
   @ApiBearerAuth('jwt-auth')
+  @ApiOkResponse({ type: NftWhiteListResponse })
   async whitelist(): Promise<NftWhiteListResponse> {
     const collections = await this.nftService.getNftWhiteList();
     return {

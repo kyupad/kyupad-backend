@@ -2,10 +2,10 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import mongoose, { HydratedDocument } from 'mongoose';
 import { ApiProperty } from '@nestjs/swagger';
 
-export type NftWhiteListDocument = HydratedDocument<NftWhiteList>;
+export type FungibleTokenDocument = HydratedDocument<FungibleToken>;
 
 @Schema({ timestamps: true })
-export class NftWhiteList {
+export class FungibleToken {
   @Prop({
     required: true,
     type: mongoose.Schema.Types.ObjectId,
@@ -17,27 +17,40 @@ export class NftWhiteList {
   })
   _id?: string;
 
-  @Prop({ required: true, type: String })
   @ApiProperty({
     type: String,
     required: true,
   })
-  collection_address: string;
+  @Prop({ required: true, type: String })
+  address: string;
 
-  @Prop({ required: true, type: [String] })
   @ApiProperty({
-    isArray: true,
     type: String,
     required: true,
   })
-  holders: string[];
-
   @Prop({ required: true, type: String })
+  symbol: string;
+
+  @ApiProperty({
+    type: String,
+    required: true,
+  })
+  @Prop({ required: true, type: String })
+  name: string;
+
+  @ApiProperty({
+    type: String,
+    required: true,
+  })
+  @Prop({ required: true, type: String })
+  icon: string;
+
   @ApiProperty({
     type: Date,
     required: false,
   })
+  @Prop({ type: String })
   created_by: string;
 }
 
-export const NftWhiteListSchema = SchemaFactory.createForClass(NftWhiteList);
+export const FungibleTokenSchema = SchemaFactory.createForClass(FungibleToken);

@@ -1,6 +1,7 @@
 import { ApiProperty, ApiPropertyOptions } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { mixin } from '@nestjs/common';
+import { EDefultResponseStatus } from '@/enums';
 
 type Constructor<T = NonNullable<unknown>> = new (...args: any[]) => T;
 
@@ -28,3 +29,15 @@ export function withBaseResponse<TBase extends Constructor>(
 
   return mixin(ResponseBase);
 }
+
+class DefaultResponseDto {
+  @ApiProperty({
+    enum: EDefultResponseStatus,
+    required: true,
+  })
+  status: 'SUCCESS';
+}
+
+class DefaultResponse extends withBaseResponse(DefaultResponseDto, {}) {}
+
+export { DefaultResponse };
