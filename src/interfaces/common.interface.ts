@@ -21,7 +21,7 @@ export function withBaseResponse<TBase extends Constructor>(
       ...options,
     })
     @Type(() => Base)
-    data: InstanceType<TBase> | InstanceType<TBase>[];
+    data: InstanceType<TBase> | InstanceType<TBase>[] | null;
 
     @ApiProperty({ type: String, required: false })
     error?: string;

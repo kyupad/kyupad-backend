@@ -107,7 +107,7 @@ import { FungibleModule } from '@usecases/admin/fungible/fungible.module';
             module: SeasonModule,
           },
           {
-            path: 'project',
+            path: 'projects',
             module: AdminProjectModule,
           },
           {

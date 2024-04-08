@@ -21,6 +21,20 @@ export class ProjectService {
     return result;
   }
 
+  async update(id: string, data: Project): Promise<Project | null> {
+    const result = await this.projectModel.findByIdAndUpdate(id, data);
+    return result;
+  }
+
+  async delete(ids: string[]): Promise<void> {
+    await this.projectModel.deleteMany({ _id: { $in: ids } });
+  }
+
+  async findAll(): Promise<Project[]> {
+    const result = await this.projectModel.find().sort({ createdAt: 'desc' });
+    return result;
+  }
+
   async findAllUpcoming(): Promise<Project[]> {
     const result = await this.projectModel
       .find()
