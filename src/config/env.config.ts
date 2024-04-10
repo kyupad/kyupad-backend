@@ -8,4 +8,5 @@ export default () => ({
   MONGODB_URI: process.env.MONGODB_URI,
   PORT: process.env.PORT || 8080,
   ALLOWED_ORIGINS: process.env.ALLOWED_ORIGINS,
+  S3_BUCKET: process.env.S3_BUCKET,
 });

@@ -1,11 +1,12 @@
-import { ProjectSalePool, ProjectVestingType } from '@/constants';
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { ApiProperty } from '@nestjs/swagger';
 import dayjs from 'dayjs';
 import mongoose, { HydratedDocument } from 'mongoose';
 import utc from 'dayjs/plugin/utc';
 import { v4 as uuidv4 } from 'uuid';
-import { Exclude, Transform } from 'class-transformer';
+import { Exclude, Expose, Transform } from 'class-transformer';
+import { EProjectSalePool, EProjectVestingType } from '@/enums';
+import 'reflect-metadata';
 
 dayjs.extend(utc);
 
@@ -32,6 +33,7 @@ class Socials {
 class Info {
   @ApiProperty({ default: 300000 })
   @Prop({ required: true, type: mongoose.Schema.Types.Number })
+  @Expose()
   total_raise: number; // field
 
   @ApiProperty({ default: 300 })
@@ -40,13 +42,13 @@ class Info {
 
   @ApiProperty({
     default: 'Subscription',
-    enum: ProjectSalePool,
+    enum: EProjectSalePool,
     enumName: 'sale_pool',
   })
   @Prop({
     required: true,
     type: mongoose.Schema.Types.String,
-    enum: ProjectSalePool,
+    enum: EProjectSalePool,
   })
   sale_pool: string; // field
 
@@ -67,7 +69,7 @@ class TokenInfo {
 
   @Prop({
     type: mongoose.Schema.Types.String,
-    enum: ProjectVestingType,
+    enum: EProjectVestingType,
   })
   vesting_type: string; // field
 
@@ -147,6 +149,15 @@ export class Project {
     type: mongoose.Schema.Types.UUID,
     required: true,
   })
+  @Transform(({ value }) => {
+    if (value) {
+      const buffer = Buffer.from(value.data);
+      const result = buffer.toString('hex');
+      const uuid = `${result.slice(0, 8)}-${result.slice(8, 12)}-${result.slice(12, 16)}-${result.slice(16, 20)}-${result.slice(20)}`;
+      return uuid;
+    }
+    return value;
+  })
   id: string; // field
 
   @ApiProperty({ default: 'Project A' })
@@ -187,6 +198,7 @@ export class Project {
 
   @ApiProperty()
   @Prop({ type: mongoose.Schema.Types.Map })
+  @Expose()
   info: Info; // field
 
   @ApiProperty()
@@ -221,6 +233,7 @@ export class Project {
   @Prop({
     type: mongoose.Schema.Types.Map,
   })
+  @Exclude()
   assets: Assets;
 }
 

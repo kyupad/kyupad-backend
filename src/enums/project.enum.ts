@@ -3,4 +3,12 @@ enum EProjectType {
   'success' = 'success',
 }
 
-export { EProjectType };
+enum EProjectSalePool {
+  'Subscription' = 'Subscription',
+}
+
+enum EProjectVestingType {
+  'Milestone' = 'Milestone',
+}
+
+export { EProjectType, EProjectSalePool, EProjectVestingType };

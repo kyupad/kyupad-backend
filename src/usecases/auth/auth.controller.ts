@@ -113,14 +113,6 @@ export class AuthController {
       throw new UnauthorizedException('signed message is required');
     }
 
-    if (!body.output.signatureType) {
-      throw new UnauthorizedException('signature type is required');
-    }
-
-    if (body.output.signatureType !== 'ed25519') {
-      throw new UnauthorizedException('signature type is invalid');
-    }
-
     const decodedOutput: SolanaSignInOutput = {
       account: {
         publicKey: new Uint8Array(
@@ -142,9 +134,10 @@ export class AuthController {
 
     try {
       await this.userService.upsert({
-        _id: body.output.account.publicKey,
+        id: body.output.account.publicKey,
       });
-    } catch {
+    } catch (e) {
+      this.logger.error(e.message);
       throw new ConflictException('Failed to register user');
     }
 

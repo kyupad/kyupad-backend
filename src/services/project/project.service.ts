@@ -5,6 +5,7 @@ import { Model } from 'mongoose';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import { UserProject } from '@/schemas/user_project.schema';
+import { isEmpty } from '@/helpers';
 
 dayjs.extend(utc);
 
@@ -35,21 +36,35 @@ export class ProjectService {
     return result;
   }
 
-  async findAllUpcoming(): Promise<Project[]> {
+  async listUpcoming(): Promise<Project[]> {
     const result = await this.projectModel
-      .find()
-      .where('registration_at')
-      .gte(dayjs.utc().valueOf())
-      .sort({ registration_at: 'asc' });
+      .find({
+        'timeline.registration_end_at': {
+          $gte: dayjs.utc().toDate(),
+        },
+      })
+      .sort({ 'timeline.registration_end_at': 'desc' });
+
+    if (isEmpty(result)) {
+      const result = await this.projectModel
+        .find()
+        .sort({ 'timeline.registration_end_at': 'desc' })
+        .limit(4);
+      return result;
+    }
+
     return result;
   }
 
-  async findAllSuccess(): Promise<Project[]> {
+  async listSuccess(): Promise<Project[]> {
     const result = await this.projectModel
-      .find()
-      .where('claim_at')
-      .lt(dayjs.utc().valueOf())
-      .sort({ claim_at: 'asc' });
+      .find({
+        'timeline.investment_end_at': {
+          $lte: dayjs.utc().toDate(),
+        },
+      })
+      .sort({ 'timeline.investment_end_at': 'desc' });
+
     return result;
   }
 
@@ -58,16 +73,8 @@ export class ProjectService {
     return result;
   }
 
-  async createUserProject(userProject: UserProject): Promise<UserProject> {
-    const result = await this.userProjectModel.create(userProject);
-    return result;
-  }
-
-  async findUserProject(
-    project_id: string,
-    user_id: string,
-  ): Promise<UserProject | null> {
-    const result = await this.userProjectModel.findOne({ user_id, project_id });
-    return result;
+  async isExist(id: string): Promise<boolean> {
+    const result = await this.userProjectModel.exists({ id: id });
+    return !!result?._id;
   }
 }

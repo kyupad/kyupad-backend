@@ -6,19 +6,18 @@ import { CatnipAssetHolder } from '@usecases/project/project.input';
 
 export type UserDocument = HydratedDocument<UserProject>;
 
-@Schema()
+@Schema({ timestamps: true })
 export class UserProject {
   @Prop({ auto: true, type: mongoose.Schema.Types.ObjectId })
   _id?: string;
-  @Prop()
+
   @ApiProperty({ default: 'id' })
+  @Prop({ type: mongoose.Schema.Types.String })
   user_id: string;
-  @Prop({ type: mongoose.Schema.Types.ObjectId })
+
   @ApiProperty({ default: 'id' })
+  @Prop({ type: mongoose.Schema.Types.UUID })
   project_id: string;
-  @Prop({ default: false })
-  @ApiProperty({ default: false })
-  is_applied: boolean;
 
   @Prop({
     type: 'string',
