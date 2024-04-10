@@ -7,4 +7,9 @@ enum EDefultResponseStatus {
   ERROR = 'error',
 }
 
-export { ESchedulerType, EDefultResponseStatus };
+enum ETokenType {
+  NFT = 'nft',
+  FUNGIBLE = 'fungible',
+}
+
+export { ESchedulerType, EDefultResponseStatus, ETokenType };

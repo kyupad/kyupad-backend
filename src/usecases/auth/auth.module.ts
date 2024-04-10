@@ -1,22 +1,20 @@
 import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule } from '@nestjs/config';
-import { SigninDataModule, VerifySiwsModule } from '@usecases/auth/solana';
-import { RefreshModule } from './refresh/refresh.module';
+import { AuthController } from './auth.controller';
+import { UserServiceModule } from '@/services/user/user.module';
 
 @Module({
   imports: [
-    SigninDataModule,
-    VerifySiwsModule,
+    UserServiceModule,
     ConfigModule.forRoot({
       isGlobal: true,
     }),
     JwtModule.register({
       global: true,
     }),
-    RefreshModule,
   ],
-  controllers: [],
+  controllers: [AuthController],
   providers: [],
 })
 export class AuthModule {}

@@ -13,23 +13,8 @@ import { PingModule } from '@modules/ping/ping.module';
 import { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY } from './constants';
 import { ClsModule } from 'nestjs-cls';
 import { parseCookies } from '@helpers/common.helper';
-import { SigninDataModule, VerifySiwsModule } from '@usecases/auth/solana';
-import { RefreshModule } from '@usecases/auth/refresh/refresh.module';
 import { MongooseModule } from '@nestjs/mongoose';
-import { AdminModule } from '@usecases/admin/admin.module';
-import { CollectionsModule } from '@usecases/admin/nft';
-import { SeasonModule } from '@usecases/admin/season/season.module';
-import { UserSeasonModule } from '@usecases/season/user_season.module';
-import { UserPoolModule } from '@usecases/pools/user_pool.module';
-import { UserRegistrationModule } from '@usecases/registration/user_registration.module';
-import { UserInvestmentsModule } from '@usecases/investments/user_investments.module';
-import { UserParticipationModule } from '@usecases/investments/participations/participation_investments.module';
-import { UserVestingModule } from '@usecases/vesting/user_vesting.module';
-import { ProjectListModule } from './usecases/project/list/list.module';
-import { ProjectDetailModule } from './usecases/project/detail/detail.module';
-import { AdminProjectModule } from './usecases/admin/project/project.module';
-import { WhiteListModule } from '@usecases/admin/nft/whitelist/whitelist.module';
-import { FungibleModule } from '@usecases/admin/fungible/fungible.module';
+import { ProjectModule } from './usecases/project/project.module';
 
 @Module({
   imports: [
@@ -49,17 +34,7 @@ import { FungibleModule } from '@usecases/admin/fungible/fungible.module';
     // ]),
     AuthModule,
     PingModule,
-    AdminModule,
-    UserSeasonModule,
-    UserPoolModule,
-    UserRegistrationModule,
-    UserInvestmentsModule,
-    UserParticipationModule,
-    UserVestingModule,
-    ProjectListModule,
-    ProjectDetailModule,
-    WhiteListModule,
-    FungibleModule,
+    ProjectModule,
     ClsModule.forRoot({
       middleware: {
         mount: true,
@@ -90,65 +65,10 @@ import { FungibleModule } from '@usecases/admin/fungible/fungible.module';
       {
         path: 'auth',
         module: AuthModule,
-        children: [
-          { path: 'signin-data', module: SigninDataModule },
-          { path: 'verify-siws', module: VerifySiwsModule },
-          { path: 'refresh', module: RefreshModule },
-        ],
-      },
-      {
-        path: 'admin',
-        module: AdminModule,
-        children: [
-          { path: 'nft/collections', module: CollectionsModule },
-          { path: 'nft/whitelist', module: WhiteListModule },
-          {
-            path: 'season',
-            module: SeasonModule,
-          },
-          {
-            path: 'projects',
-            module: AdminProjectModule,
-          },
-          {
-            path: 'fungible',
-            module: FungibleModule,
-          },
-        ],
       },
       {
         path: 'projects',
-        module: ProjectListModule,
-      },
-      {
-        path: 'project/:slug',
-        module: ProjectDetailModule,
-      },
-      {
-        path: 'seasons',
-        module: UserSeasonModule,
-      },
-      {
-        path: 'pools',
-        module: UserPoolModule,
-      },
-      {
-        path: 'registration',
-        module: UserRegistrationModule,
-      },
-      {
-        path: 'vesting',
-        module: UserVestingModule,
-      },
-      {
-        path: 'investments',
-        module: UserInvestmentsModule,
-        children: [
-          {
-            path: 'participation',
-            module: UserParticipationModule,
-          },
-        ],
+        module: ProjectModule,
       },
     ]),
   ],

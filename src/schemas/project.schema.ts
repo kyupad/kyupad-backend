@@ -4,6 +4,9 @@ import { ApiProperty } from '@nestjs/swagger';
 import dayjs from 'dayjs';
 import mongoose, { HydratedDocument } from 'mongoose';
 import utc from 'dayjs/plugin/utc';
+import { v4 as uuidv4 } from 'uuid';
+import { Exclude, Transform } from 'class-transformer';
+
 dayjs.extend(utc);
 
 export type ProjectDocument = HydratedDocument<Project>;
@@ -114,7 +117,7 @@ class Price {
   currency: string; // field
 }
 
-class Assets {
+export class Assets {
   @ApiProperty({ default: ['HZ1JovNiVvGrGNiiYvEozEVgZ58xaU3RKwX8eACQBCt3'] })
   @Prop({
     type: mongoose.Schema.Types.Array,
@@ -136,7 +139,15 @@ class Assets {
 export class Project {
   @ApiProperty({ required: false })
   @Prop({ auto: true, type: mongoose.Schema.Types.ObjectId, required: false })
+  @Exclude()
   _id?: string; // field
+
+  @ApiProperty({ required: true, default: uuidv4() })
+  @Prop({
+    type: mongoose.Schema.Types.UUID,
+    required: true,
+  })
+  id: string; // field
 
   @ApiProperty({ default: 'Project A' })
   @Prop({ required: true, type: mongoose.Schema.Types.String })
@@ -150,12 +161,14 @@ export class Project {
     default: 'https://dev-bucket.kyupad.xyz/public/kyu.jpeg',
   })
   @Prop({ required: true, type: mongoose.Schema.Types.String })
+  @Transform(({ value }) => value.replace('s3:/', process.env.S3_BUCKET))
   logo: string; // field
 
   @ApiProperty({
     default: 'https://dev-bucket.kyupad.xyz/public/meow.jpeg',
   })
   @Prop({ required: true, type: mongoose.Schema.Types.String })
+  @Transform(({ value }) => value.replace('s3:/', process.env.S3_BUCKET))
   thumbnail: string; // field
 
   @ApiProperty({ required: false, default: ['Perp DEX', 'Defi'] })

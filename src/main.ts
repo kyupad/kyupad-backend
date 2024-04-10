@@ -52,17 +52,7 @@ async function bootstrap() {
       .setTitle('Kyupad - OpenAPI')
       .setDescription('Kyupad - OpenAPI')
       .setVersion('1.0')
-      .addBearerAuth(
-        {
-          type: 'http',
-          scheme: 'bearer',
-          bearerFormat: 'JWT',
-          name: 'JWT',
-          description: 'Enter JWT token',
-          in: 'header',
-        },
-        'jwt-auth',
-      )
+      .addCookieAuth('access_token')
       .build();
     const document = SwaggerModule.createDocument(app, config);
     SwaggerModule.setup('swagger', app, document);

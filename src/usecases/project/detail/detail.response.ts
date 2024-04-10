@@ -14,4 +14,4 @@ export class GetProjectDetailResponse extends withBaseResponse(
   {},
 ) {}
 
-export interface IApplyProjectResponse extends IResponseBase {}
+export interface IApplyProjectResponse {}

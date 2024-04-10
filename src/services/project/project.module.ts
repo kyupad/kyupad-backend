@@ -14,4 +14,4 @@ import { UserProject, UserProjectSchema } from '@/schemas/user_project.schema';
   providers: [ProjectService],
   exports: [ProjectService],
 })
-export class ProjectModule {}
+export class ProjectServiceModule {}

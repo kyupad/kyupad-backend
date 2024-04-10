@@ -1,6 +1,6 @@
-enum ProjectTime {
+enum EProjectType {
   'upcoming' = 'upcoming',
   'success' = 'success',
 }
 
-export { ProjectTime };
+export { EProjectType };

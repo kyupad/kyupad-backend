@@ -1,6 +1,6 @@
 import { withBaseResponse } from '@/interfaces/common.interface';
 import { Project } from '@/schemas/project.schema';
 
-export class GetProjectsResponse extends withBaseResponse(Project, {
-  isArray: true,
-}) {}
+class ListProjectResponse extends withBaseResponse(Project) {}
+
+export { ListProjectResponse };
