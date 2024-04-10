@@ -1,17 +1,20 @@
-import { withBaseResponse } from '@/interfaces/common.interface';
-import { Project } from '@/schemas/project.schema';
-import { ApiProperty } from '@nestjs/swagger';
+import { ETokenType } from '@/enums';
 
-class DetailProjectResponse {
-  @ApiProperty()
-  is_applied: boolean;
-  @ApiProperty()
-  detail: Project;
+class CatnipAssetHolder {
+  type: ETokenType;
+
+  info: [
+    {
+      address: string;
+      balance?: number;
+      supply?: number;
+      price?: {
+        price_per_token: number;
+        total_price: number;
+        currency: 'USDC';
+      };
+    },
+  ];
 }
 
-export class GetProjectDetailResponse extends withBaseResponse(
-  DetailProjectResponse,
-  {},
-) {}
-
-export interface IApplyProjectResponse extends IResponseBase {}
+export { CatnipAssetHolder };

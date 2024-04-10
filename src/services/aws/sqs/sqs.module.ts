@@ -1,10 +1,10 @@
 import { Module } from '@nestjs/common';
-import { AwsSchedulerService } from '@/services/aws/scheduler/scheduler.service';
+import { AwsSQSService } from '@/services/aws/sqs/sqs.service';
 
 @Module({
   imports: [],
   controllers: [],
-  providers: [AwsSchedulerService],
-  exports: [AwsSchedulerService],
+  providers: [AwsSQSService],
+  exports: [AwsSQSService],
 })
-export class AwsSchedulerServiceModule {}
+export class AwsSQSServiceModule {}

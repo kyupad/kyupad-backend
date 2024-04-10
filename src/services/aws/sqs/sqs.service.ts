@@ -1,18 +1,18 @@
 import { Injectable, Logger } from '@nestjs/common';
 import {
-  SchedulerClient,
-  CreateScheduleCommand,
-} from '@aws-sdk/client-scheduler';
-import { ICreateScheduleOption } from '@/services/aws/scheduler/scheduler.interface';
-import { CreateScheduleCommandInput } from '@aws-sdk/client-scheduler/dist-types/commands/CreateScheduleCommand';
+  SQSClient,
+  SendMessageCommand,
+  SendMessageCommandInput,
+} from '@aws-sdk/client-sqs';
+import { ICreateQueueOption } from '@/services/aws/sqs/sqs.interface';
 
 @Injectable()
-export class AwsSchedulerService {
-  private logger = new Logger(AwsSchedulerService.name);
-  private client: SchedulerClient;
+export class AwsSQSService {
+  private logger = new Logger(AwsSQSService.name);
+  private client: SQSClient;
 
   constructor() {
-    this.client = new SchedulerClient({
+    this.client = new SQSClient({
       region: process.env.AWS_REGION,
       credentials: {
         accessKeyId: process.env.AWS_ACCESS_KEY as string,
@@ -21,43 +21,29 @@ export class AwsSchedulerService {
     });
   }
 
-  async createOneTimeSchedule<I>(
-    option: ICreateScheduleOption<I>,
-  ): Promise<void> {
+  async createSQS<I>(option: ICreateQueueOption<I>): Promise<void> {
     this.logger.log(
-      `[PROCESSING] [SCHEDULER] Create [${option?.target?.type}] [${option?.name}] with params [${JSON.stringify(
-        option?.target?.input,
+      `[PROCESSING] [QUEUE] Send message [${option?.message_group_id}] [${option?.message_deduplication_id}] with params [${JSON.stringify(
+        option?.message_body,
       )}] `,
     );
-    const input: CreateScheduleCommandInput = {
-      Name: option.name,
-      ActionAfterCompletion: 'DELETE',
-      FlexibleTimeWindow: {
-        Mode: 'OFF',
-      },
-      ScheduleExpression: `at(${option.schedule_time})`,
-      ScheduleExpressionTimezone: 'UTC',
-      GroupName: option.group_name,
-      Target: {
-        Arn: option.target.arn,
-        Input: JSON.stringify(option.target.input),
-        RetryPolicy: {
-          MaximumEventAgeInSeconds: 60,
-          MaximumRetryAttempts: 5,
-        },
-        RoleArn: option.target.role_arn,
-        SqsParameters:
-          option.target.type === 'SQS'
-            ? { MessageGroupId: option.target?.sqs_msg_group_id }
-            : undefined,
-      },
-    };
-    const cmd = new CreateScheduleCommand(input);
-    await this.client.send(cmd);
-    this.logger.log(
-      `[SUCCESSFUL] [SCHEDULER] Create [${option?.target?.type}] [${option?.name}] with params [${JSON.stringify(
-        option?.target?.input,
-      )}] `,
-    );
+    try {
+      const input: SendMessageCommandInput = {
+        MessageGroupId: option.message_group_id,
+        MessageBody: JSON.stringify(option.message_body),
+        MessageDeduplicationId: option.message_deduplication_id,
+        QueueUrl: option.queue_url,
+      };
+      const cmd = new SendMessageCommand(input);
+      await this.client.send(cmd);
+      this.logger.log(
+        `[SUCCESSFUL] [QUEUE] Send message [${option?.message_group_id}] [${option?.message_deduplication_id}]`,
+      );
+    } catch (e) {
+      this.logger.error(
+        `[ERROR] [QUEUE] Send message [${option?.message_group_id}] [${option?.message_deduplication_id}], ${e.stack}`,
+      );
+      throw e;
+    }
   }
 }
