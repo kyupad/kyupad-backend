@@ -10,6 +10,7 @@ import {
   Param,
   Post,
   Query,
+  UnauthorizedException,
 } from '@nestjs/common';
 import {
   ApiQuery,
@@ -20,6 +21,7 @@ import {
   ApiOperation,
   ApiNotFoundResponse,
   ApiCreatedResponse,
+  ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import {
   DetailProjectResponse,
@@ -149,6 +151,7 @@ export class ProjectController {
   @ApiOperation({ summary: 'Apply Project' })
   @ApiNotFoundResponse({ description: 'Project not found' })
   @ApiCreatedResponse({ type: ProjectApplyResponse })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized' })
   @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
   async apply(@Body() body: ProjectApplyBody): Promise<ProjectApplyResponse> {
     const project_id = body?.project_id;
@@ -165,15 +168,17 @@ export class ProjectController {
 
     const accessToken = this.cls.get('accessToken');
 
-    if (accessToken) {
-      const userInfo = this.jwtService.decode(accessToken) as any;
+    if (!accessToken) {
+      throw new UnauthorizedException('Please login to apply project');
+    }
 
-      if (userInfo?.sub) {
-        await this.userProjectService.create({
-          project_id,
-          user_id: userInfo.sub,
-        });
-      }
+    const userInfo = this.jwtService.decode(accessToken) as any;
+
+    if (userInfo?.sub) {
+      await this.userProjectService.create({
+        project_id,
+        user_id: userInfo.sub,
+      });
     }
 
     return {

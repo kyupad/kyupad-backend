@@ -5,7 +5,6 @@ import { Model } from 'mongoose';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import { UserProject } from '@/schemas/user_project.schema';
-import { isEmpty } from '@/helpers';
 
 dayjs.extend(utc);
 
@@ -45,11 +44,11 @@ export class ProjectService {
       })
       .sort({ 'timeline.registration_end_at': 'desc' });
 
-    if (isEmpty(result)) {
+    if (result.length <= 4) {
       const result = await this.projectModel
         .find()
         .sort({ 'timeline.registration_end_at': 'desc' })
-        .limit(4);
+        .limit(3); // sửa sau
       return result;
     }
 
@@ -63,7 +62,8 @@ export class ProjectService {
           $lte: dayjs.utc().toDate(),
         },
       })
-      .sort({ 'timeline.investment_end_at': 'desc' });
+      .sort({ 'timeline.investment_end_at': 'desc' })
+      .limit(3);
 
     return result;
   }
@@ -74,7 +74,7 @@ export class ProjectService {
   }
 
   async isExist(id: string): Promise<boolean> {
-    const result = await this.userProjectModel.exists({ id: id });
+    const result = await this.projectModel.exists({ id: id });
     return !!result?._id;
   }
 }
