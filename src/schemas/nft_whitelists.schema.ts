@@ -1,6 +1,8 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import mongoose, { HydratedDocument } from 'mongoose';
 import { ApiProperty } from '@nestjs/swagger';
+import { NftCollection } from '@schemas/nft_collections.schema';
+import { Expose } from 'class-transformer';
 
 export type NftWhiteListDocument = HydratedDocument<NftWhiteList>;
 
@@ -17,12 +19,25 @@ export class NftWhiteList {
   })
   _id?: string;
 
-  @Prop({ required: true, type: String })
+  @Prop({
+    required: true,
+    type: mongoose.Schema.Types.String,
+  })
   @ApiProperty({
     type: String,
     required: true,
   })
-  collection_address: string;
+  season_id: string;
+
+  @Prop({ required: false, type: String })
+  @ApiProperty({
+    type: String,
+    required: false,
+  })
+  collection_address?: string;
+
+  @Prop({ required: false, type: String })
+  community_name?: string;
 
   @Prop({ required: true, type: [String] })
   @ApiProperty({
@@ -30,7 +45,24 @@ export class NftWhiteList {
     type: String,
     required: true,
   })
-  holders: string[];
+  holders?: string[];
+
+  @Prop({ required: true, type: Number })
+  @ApiProperty({
+    type: Number,
+    required: true,
+  })
+  nfts_total: number;
+
+  @Prop({ required: true, type: Number })
+  @ApiProperty({
+    type: Number,
+    required: true,
+  })
+  holders_total: number;
+
+  @Prop({ required: false, type: Number })
+  order?: number;
 
   @Prop({ required: true, type: String })
   @ApiProperty({
@@ -38,6 +70,58 @@ export class NftWhiteList {
     required: false,
   })
   created_by: string;
+
+  @ApiProperty({
+    type: Boolean,
+    required: false,
+  })
+  @Prop({ default: false, type: Boolean })
+  is_other_community?: boolean;
+
+  collection?: NftCollection[];
+
+  @ApiProperty({
+    type: String,
+    required: false,
+  })
+  @Prop({ required: false, type: String })
+  merkle_root?: string;
+
+  @ApiProperty({ type: Date })
+  @Prop({ required: false, type: 'Date' })
+  start_time?: Date;
+
+  @ApiProperty({ type: Date })
+  @Prop({ required: false, type: 'Date' })
+  end_time?: Date;
+
+  @ApiProperty({
+    type: Number,
+    required: false,
+  })
+  @Prop({ required: false, type: Number })
+  mint_fee: number;
+
+  @ApiProperty({
+    type: Number,
+    required: false,
+  })
+  @Prop({ required: false, type: Number })
+  minted_total: number;
+
+  @ApiProperty({
+    type: Number,
+    required: false,
+  })
+  @Prop({ required: false, type: Number })
+  pool_supply: number;
+
+  @ApiProperty({
+    type: Number,
+    required: false,
+  })
+  @Prop({ required: false, type: Number })
+  total_mint_per_wallet: number;
 }
 
 export const NftWhiteListSchema = SchemaFactory.createForClass(NftWhiteList);

@@ -15,6 +15,8 @@ import { ClsModule } from 'nestjs-cls';
 import { parseCookies } from '@helpers/common.helper';
 import { MongooseModule } from '@nestjs/mongoose';
 import { ProjectModule } from '@usecases/project/project.module';
+import { SeasonModule } from '@usecases/season/season.module';
+import { NftModule } from '@usecases/nft/nft.module';
 
 @Module({
   imports: [
@@ -35,6 +37,8 @@ import { ProjectModule } from '@usecases/project/project.module';
     AuthModule,
     PingModule,
     ProjectModule,
+    SeasonModule,
+    NftModule,
     ClsModule.forRoot({
       middleware: {
         mount: true,
@@ -69,6 +73,14 @@ import { ProjectModule } from '@usecases/project/project.module';
       {
         path: 'projects',
         module: ProjectModule,
+      },
+      {
+        path: 'seasons',
+        module: SeasonModule,
+      },
+      {
+        path: 'nft',
+        module: NftModule,
       },
     ]),
   ],

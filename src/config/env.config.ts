@@ -9,4 +9,5 @@ export default () => ({
   PORT: process.env.PORT || 8080,
   ALLOWED_ORIGINS: process.env.ALLOWED_ORIGINS,
   S3_BUCKET: process.env.S3_BUCKET,
+  CRYPTO_ENCRYPT_TOKEN: process.env.CRYPTO_ENCRYPT_TOKEN,
 });
