@@ -21,13 +21,19 @@ export class NftService {
     poolId?: string,
     wallet?: string,
   ): Promise<MintingPoolRoundDto> {
-    const season = await this.seasonService.getSeasonById(seasonId);
+    const [season, pools] = await Promise.all([
+      this.seasonService.getSeasonById(seasonId),
+      this.listPool({
+        season_id: seasonId,
+      }),
+    ]);
     if (!season.is_active)
       throw new BadRequestException('Season is not active');
-    const pools = await this.listPool({
-      season_id: seasonId,
-    });
+    if (!pools || pools.length === 0)
+      throw new BadRequestException('Pools of season not found');
     const response = new MintingPoolRoundDto();
+    response.collection_address = season.nft_collection?.address;
+    response.contract_address = season.nft_contract;
     const activePools: PoolDto[] = [];
     pools.forEach((pool, idx) => {
       if (pool.collection && pool.collection.length > 0) {

@@ -25,7 +25,6 @@ const getMerkleProof2 = (
   wallet: string,
 ): { position: 'left' | 'right'; data: string }[] => {
   wallets.sort();
-  fs.writeFileSync('wallet2.json', JSON.stringify(wallets));
   const leafNode = wallets.map((addr) => keccak256(addr));
   const merkleTree = new MerkleTree(leafNode, keccak256, { sortPairs: true });
   const merkleRoofBuffer = merkleTree.getProof(keccak256(wallet));

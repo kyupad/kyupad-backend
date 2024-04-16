@@ -66,6 +66,10 @@ export class Season {
   })
   nft_collection?: NftCollection;
 
+  @ApiProperty({ type: String })
+  @Prop({ type: String, required: false })
+  nft_contract?: string;
+
   @Prop({
     type: Boolean,
     default: false,

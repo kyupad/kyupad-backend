@@ -103,6 +103,16 @@ class MintingPoolDto {
 
 class MintingPoolRoundDto {
   @ApiProperty({
+    type: String,
+  })
+  collection_address?: string;
+
+  @ApiProperty({
+    type: String,
+  })
+  contract_address?: string;
+
+  @ApiProperty({
     type: MintingPoolDto,
   })
   community_round: MintingPoolDto;
