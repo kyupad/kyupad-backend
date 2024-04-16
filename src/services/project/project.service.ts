@@ -1,12 +1,10 @@
 import { Project } from '@/schemas/project.schema';
-import { BadRequestException, Inject, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectConnection, InjectModel } from '@nestjs/mongoose';
 import mongoose, { Model } from 'mongoose';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import { UserProject } from '@/schemas/user_project.schema';
-import { AwsSQSService } from '@/services/aws/sqs/sqs.service';
-import { ICatnipAssetsSnapshotBody } from '@/services/project/project.input';
 
 dayjs.extend(utc);
 
@@ -16,8 +14,6 @@ export class ProjectService {
     @InjectModel(Project.name) private readonly projectModel: Model<Project>,
     @InjectModel(UserProject.name)
     private readonly userProjectModel: Model<UserProject>,
-    @Inject(AwsSQSService)
-    private readonly awsSQSService: AwsSQSService,
     @InjectConnection() private readonly connection: mongoose.Connection,
   ) {}
 
@@ -83,38 +79,18 @@ export class ProjectService {
     return !!result?._id;
   }
 
-  async createUserProject(userProject: UserProject): Promise<UserProject> {
-    const session = await this.connection.startSession();
-    const resultTrans = await session.withTransaction(async () => {
-      const [result, project] = await Promise.all([
-        this.userProjectModel.create(userProject),
-        this.projectModel.findById(userProject.project_id),
-      ]);
-      if (!project || (project.catnip_assets || []).length === 0)
-        throw new BadRequestException(
-          `[USER PROJECT] user [${userProject.user_id}] cannot registration to project [${userProject.project_id}] [Require: catnip_assets]`,
-        );
-      await this.awsSQSService.createSQS<ICatnipAssetsSnapshotBody>({
-        queue_url: process.env.AWS_QUEUE_URL as string,
-        message_group_id: 'REGISTRATION_CATNIP_ASSET_SNAPSHOT',
-        message_deduplication_id: result.id,
-        message_body: {
-          user_id: result.user_id,
-          project_id: result.project_id,
-          catnip_assets: project?.catnip_assets,
-        },
-      });
-      return result;
-    });
-    await session.endSession();
-    return resultTrans;
-  }
-
   async findUserProject(
     project_id: string,
     user_id: string,
   ): Promise<UserProject | null> {
     const result = await this.userProjectModel.findOne({ user_id, project_id });
+    return result;
+  }
+
+  async findProjectById(id: string): Promise<Project | null> {
+    const result = await this.projectModel.findOne({
+      id,
+    });
     return result;
   }
 }

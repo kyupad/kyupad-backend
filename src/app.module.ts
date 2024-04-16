@@ -14,7 +14,7 @@ import { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY } from './constants';
 import { ClsModule } from 'nestjs-cls';
 import { parseCookies } from '@helpers/common.helper';
 import { MongooseModule } from '@nestjs/mongoose';
-import { ProjectModule } from './usecases/project/project.module';
+import { ProjectModule } from '@usecases/project/project.module';
 
 @Module({
   imports: [

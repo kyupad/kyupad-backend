@@ -16,9 +16,9 @@ import {
   ApiQuery,
   ApiOkResponse,
   ApiTags,
+  ApiOperation,
   ApiBadRequestResponse,
   ApiInternalServerErrorResponse,
-  ApiOperation,
   ApiNotFoundResponse,
   ApiCreatedResponse,
   ApiUnauthorizedResponse,
@@ -31,11 +31,11 @@ import {
   ProjectApplyBody,
   ProjectApplyResponse,
 } from './project.type';
-import { plainToInstance } from 'class-transformer';
-import { Project } from '@/schemas/project.schema';
 import { ClsService } from 'nestjs-cls';
 import { JwtService } from '@nestjs/jwt';
 import { UserProjectService } from '@/services/user-project/user-project.service';
+import { plainToInstance } from 'class-transformer';
+import { Project } from '@schemas/project.schema';
 
 @Controller()
 @ApiTags('project')
@@ -160,12 +160,6 @@ export class ProjectController {
       throw new BadRequestException('project_id is required');
     }
 
-    const isExistProject = await this.projectService.isExist(project_id);
-
-    if (!isExistProject) {
-      throw new NotFoundException('Project not found');
-    }
-
     const accessToken = this.cls.get('accessToken');
 
     if (!accessToken) {
@@ -178,8 +172,50 @@ export class ProjectController {
       await this.userProjectService.create({
         project_id,
         user_id: userInfo.sub,
+        is_applied: true,
       });
     }
+
+    return {
+      statusCode: HttpStatus.CREATED,
+      data: [{ project_id }],
+    };
+  }
+
+  @Post('/registration/mock')
+  @ApiOperation({ summary: 'Apply Project' })
+  @ApiNotFoundResponse({ description: 'Project not found' })
+  @ApiCreatedResponse({ type: ProjectApplyResponse })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized' })
+  @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
+  async mockApply(
+    @Body() body: ProjectApplyBody,
+  ): Promise<ProjectApplyResponse> {
+    const project_id = body?.project_id;
+
+    if (!project_id) {
+      throw new BadRequestException('project_id is required');
+    }
+
+    const isExistProject = await this.projectService.isExist(project_id);
+
+    if (!isExistProject) {
+      throw new NotFoundException('Project not found');
+    }
+
+    // const accessToken = this.cls.get('accessToken');
+    //
+    // if (!accessToken) {
+    //   throw new UnauthorizedException('Please login to apply project');
+    // }
+    //
+    // const userInfo = this.jwtService.decode(accessToken) as any;
+
+    await this.userProjectService.create({
+      project_id,
+      user_id: body.user_id || 'NONE',
+      is_applied: true,
+    });
 
     return {
       statusCode: HttpStatus.CREATED,

@@ -15,9 +15,13 @@ export class UserProject {
   @Prop({ type: mongoose.Schema.Types.String })
   user_id: string;
 
+  @Prop({ type: String })
   @ApiProperty({ default: 'id' })
   @Prop({ type: mongoose.Schema.Types.UUID })
   project_id: string;
+
+  @Prop({ default: false })
+  is_applied: boolean;
 
   @Prop({
     type: 'string',

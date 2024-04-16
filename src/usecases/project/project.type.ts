@@ -136,6 +136,8 @@ class DetailProjectResponse extends withBaseResponse(DetailProjectResult) {}
 class ProjectApplyBody {
   @ApiProperty()
   project_id: string;
+
+  user_id?: string;
 }
 
 class ProjectApplyResponse extends withBaseResponse(ProjectApplyBody) {}

@@ -1,9 +1,7 @@
 interface ICatnipAssetsSnapshotBody {
-  user_id: string;
+  user_registration_id: string;
   project_id: string;
-  catnip_assets?: {
-    [key: string]: string[];
-  };
+  user_id: string;
 }
 
 export { ICatnipAssetsSnapshotBody };
