@@ -39,7 +39,7 @@ export class UserProjectService {
         message_deduplication_id: result[0].id,
         message_body: {
           user_registration_id: result[0]._id,
-          project_id: project._id || '',
+          project_id: input.project_id || '',
           user_id: input.user_id,
         },
       });
