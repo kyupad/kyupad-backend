@@ -11,4 +11,11 @@ enum EProjectVestingType {
   'Milestone' = 'Milestone',
 }
 
-export { EProjectType, EProjectSalePool, EProjectVestingType };
+enum EProjectStatus {
+  COLLECTION_PRICE_SNAPSHOT_PROCESSING = 'collection_price_snapshot_processing',
+  COLLECTION_PRICE_SNAPSHOT_ERROR = 'collection_price_snapshot_error',
+  ACTIVE = 'active',
+  DRAFT = 'draft',
+}
+
+export { EProjectType, EProjectSalePool, EProjectVestingType, EProjectStatus };

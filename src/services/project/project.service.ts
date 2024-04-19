@@ -5,6 +5,7 @@ import mongoose, { Model } from 'mongoose';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import { UserProject } from '@/schemas/user_project.schema';
+import { EProjectStatus } from '@/enums';
 
 dayjs.extend(utc);
 
@@ -42,12 +43,13 @@ export class ProjectService {
         'timeline.registration_end_at': {
           $gte: dayjs.utc().toDate(),
         },
+        status: EProjectStatus.ACTIVE,
       })
       .sort({ 'timeline.registration_end_at': 'desc' });
 
     if (result.length <= 4) {
       const result = await this.projectModel
-        .find()
+        .find({ status: EProjectStatus.ACTIVE })
         .sort({ 'timeline.registration_end_at': 'desc' })
         .limit(3); // sửa sau
       return result;
@@ -62,6 +64,7 @@ export class ProjectService {
         'timeline.investment_end_at': {
           $lte: dayjs.utc().toDate(),
         },
+        status: EProjectStatus.ACTIVE,
       })
       .sort({ 'timeline.investment_end_at': 'desc' })
       .limit(3);

@@ -11,4 +11,5 @@ export default () => ({
   S3_BUCKET: process.env.S3_BUCKET,
   CRYPTO_ENCRYPT_TOKEN: process.env.CRYPTO_ENCRYPT_TOKEN,
   AWS_S3_BUCKET_URL: process.env.AWS_S3_BUCKET_URL,
+  AWS_QUEUE_URL: process.env.AWS_QUEUE_URL,
 });

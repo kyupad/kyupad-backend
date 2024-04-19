@@ -5,7 +5,7 @@ import mongoose, { HydratedDocument } from 'mongoose';
 import utc from 'dayjs/plugin/utc';
 import { v4 as uuidv4 } from 'uuid';
 import { Exclude, Expose, Transform } from 'class-transformer';
-import { EProjectSalePool, EProjectVestingType } from '@/enums';
+import { EProjectSalePool, EProjectStatus, EProjectVestingType } from '@/enums';
 import 'reflect-metadata';
 
 dayjs.extend(utc);
@@ -235,6 +235,12 @@ export class Project {
   })
   @Exclude()
   assets: Assets;
+
+  @Prop({
+    type: String,
+    default: EProjectStatus.COLLECTION_PRICE_SNAPSHOT_PROCESSING,
+  })
+  status?: EProjectStatus;
 }
 
 export const ProjectSchema = SchemaFactory.createForClass(Project);

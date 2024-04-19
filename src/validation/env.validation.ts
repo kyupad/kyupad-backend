@@ -14,6 +14,7 @@ const envSchema = Joi.object({
   S3_BUCKET: Joi.string().required(),
   CRYPTO_ENCRYPT_TOKEN: Joi.string().required(),
   AWS_S3_BUCKET_URL: Joi.string().required(),
+  AWS_QUEUE_URL: Joi.string().required(),
 });
 
 export { envSchema };
