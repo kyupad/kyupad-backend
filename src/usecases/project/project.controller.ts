@@ -29,6 +29,7 @@ import {
   ListProjectResponse,
   ListProjectResult,
   ProjectApplyBody,
+  ProjectApplyMockBody,
   ProjectApplyResponse,
 } from './project.type';
 import { ClsService } from 'nestjs-cls';
@@ -189,7 +190,7 @@ export class ProjectController {
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
   @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
   async mockApply(
-    @Body() body: ProjectApplyBody,
+    @Body() body: ProjectApplyMockBody,
   ): Promise<ProjectApplyResponse> {
     const project_id = body?.project_id;
 

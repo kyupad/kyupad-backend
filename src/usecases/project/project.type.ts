@@ -136,7 +136,13 @@ class DetailProjectResponse extends withBaseResponse(DetailProjectResult) {}
 class ProjectApplyBody {
   @ApiProperty()
   project_id: string;
+}
 
+class ProjectApplyMockBody {
+  @ApiProperty()
+  project_id: string;
+
+  @ApiProperty()
   user_id?: string;
 }
 
@@ -148,4 +154,5 @@ export {
   DetailProjectResponse,
   ProjectApplyBody,
   ProjectApplyResponse,
+  ProjectApplyMockBody,
 };
