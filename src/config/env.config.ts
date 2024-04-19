@@ -10,4 +10,5 @@ export default () => ({
   ALLOWED_ORIGINS: process.env.ALLOWED_ORIGINS,
   S3_BUCKET: process.env.S3_BUCKET,
   CRYPTO_ENCRYPT_TOKEN: process.env.CRYPTO_ENCRYPT_TOKEN,
+  AWS_S3_BUCKET_URL: process.env.AWS_S3_BUCKET_URL,
 });

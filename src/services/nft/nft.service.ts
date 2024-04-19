@@ -17,18 +17,14 @@ export class NftService {
   ) {}
 
   async mintingPool(
-    seasonId: string,
     poolId?: string,
     wallet?: string,
   ): Promise<MintingPoolRoundDto> {
-    const [season, pools] = await Promise.all([
-      this.seasonService.getSeasonById(seasonId),
-      this.listPool({
-        season_id: seasonId,
-      }),
-    ]);
-    if (!season.is_active)
-      throw new BadRequestException('Season is not active');
+    const season = await this.seasonService.activeSeason();
+    const pools = await this.listPool({
+      season_id: season._id,
+      is_active_pool: true,
+    });
     if (!pools || pools.length === 0)
       throw new BadRequestException('Pools of season not found');
     const response = new MintingPoolRoundDto();
@@ -48,6 +44,7 @@ export class NftService {
           minted_total: 0,
           pool_supply: pool.pool_supply,
           total_mint_per_wallet: pool.total_mint_per_wallet,
+          pool_image: collection.icon,
         };
         if (collection.symbol === 'FCFS') {
           mintingPool.is_active = pool.holders?.includes(wallet || 'NONE');

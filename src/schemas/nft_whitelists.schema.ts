@@ -122,6 +122,13 @@ export class NftWhiteList {
   })
   @Prop({ required: false, type: Number })
   total_mint_per_wallet: number;
+
+  @ApiProperty({
+    type: Boolean,
+    default: false,
+  })
+  @Prop({ default: false, type: Boolean })
+  is_active_pool?: boolean;
 }
 
 export const NftWhiteListSchema = SchemaFactory.createForClass(NftWhiteList);

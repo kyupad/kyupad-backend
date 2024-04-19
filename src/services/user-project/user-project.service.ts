@@ -5,6 +5,7 @@ import mongoose, { Model } from 'mongoose';
 import { AwsSQSService } from '@/services/aws/sqs/sqs.service';
 import { ProjectService } from '@/services/project/project.service';
 import { ICatnipAssetsSnapshotBody } from '@/services/project/project.input';
+import { SeasonService } from '@/services/season/season.service';
 
 @Injectable()
 export class UserProjectService {
@@ -16,15 +17,18 @@ export class UserProjectService {
     @Inject(AwsSQSService)
     private readonly awsSQSService: AwsSQSService,
     @InjectConnection() private readonly connection: mongoose.Connection,
+    @Inject(SeasonService)
+    private readonly seasonService: SeasonService,
   ) {}
 
   async create(input: UserProject): Promise<UserProject> {
-    const [project, userProject] = await Promise.all([
+    const [project, userProject, season] = await Promise.all([
       this.projectService.findProjectById(input.project_id),
       this.userProjectModel.findOne({
         user_id: input.user_id,
         project_id: input.project_id,
       }),
+      this.seasonService.activeSeason(),
     ]);
     if (!project) {
       throw new NotFoundException('Project not found');
@@ -41,6 +45,7 @@ export class UserProjectService {
           user_registration_id: result[0]._id,
           project_id: input.project_id || '',
           user_id: input.user_id,
+          season_id: String(season?._id),
         },
       });
       return result[0];

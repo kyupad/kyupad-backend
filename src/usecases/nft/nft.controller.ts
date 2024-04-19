@@ -24,11 +24,7 @@ export class NftController {
   async activeNft(
     @Query() query: NftMintingPoolQuery,
   ): Promise<MintingPoolRoundResponse> {
-    const nft = await this.nftService.mintingPool(
-      query.season_id,
-      query.pool_id,
-      query.wallet,
-    );
+    const nft = await this.nftService.mintingPool(query.pool_id, query.wallet);
     return {
       statusCode: 200,
       data: nft,

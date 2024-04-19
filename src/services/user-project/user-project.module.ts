@@ -4,6 +4,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { UserProject } from '@/schemas/user_project.schema';
 import { ProjectServiceModule } from '@/services/project/project.module';
 import { AwsSQSServiceModule } from '@/services/aws/sqs/sqs.module';
+import { SeasonServiceModule } from '@/services/season/season.module';
 
 @Module({
   imports: [
@@ -12,6 +13,7 @@ import { AwsSQSServiceModule } from '@/services/aws/sqs/sqs.module';
     ]),
     ProjectServiceModule,
     AwsSQSServiceModule,
+    SeasonServiceModule,
   ],
   providers: [UserProjectService],
   exports: [UserProjectService],

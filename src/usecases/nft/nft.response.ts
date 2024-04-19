@@ -26,6 +26,13 @@ class PoolDto {
 
   @Expose({ groups: ['detail'] })
   @ApiProperty({
+    type: String,
+    required: false,
+  })
+  pool_image?: string;
+
+  @Expose({ groups: ['detail'] })
+  @ApiProperty({
     type: Number,
     required: true,
   })

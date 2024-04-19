@@ -13,6 +13,7 @@ const envSchema = Joi.object({
   ALLOWED_ORIGINS: Joi.string().required(),
   S3_BUCKET: Joi.string().required(),
   CRYPTO_ENCRYPT_TOKEN: Joi.string().required(),
+  AWS_S3_BUCKET_URL: Joi.string().required(),
 });
 
 export { envSchema };
