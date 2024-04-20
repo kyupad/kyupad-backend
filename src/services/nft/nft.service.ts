@@ -71,7 +71,10 @@ export class NftService {
         } else if (
           (idx === 0 && !poolId) ||
           (poolId &&
-            idx !== 0 &&
+            (idx !== 0 ||
+              new mongoose.Types.ObjectId(poolId).equals(
+                new mongoose.Types.ObjectId(pools[0]._id),
+              )) &&
             new mongoose.Types.ObjectId(poolId).equals(
               new mongoose.Types.ObjectId(pool._id),
             ))
