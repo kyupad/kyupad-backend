@@ -3,7 +3,7 @@ import mongoose, { HydratedDocument } from 'mongoose';
 import { ESnapshotStatus } from '@/enums';
 import { ApiProperty } from '@nestjs/swagger';
 import { NftCollection } from '@schemas/nft_collections.schema';
-import { Expose } from 'class-transformer';
+import { Expose, Type } from 'class-transformer';
 
 export type SeasonDocument = HydratedDocument<Season>;
 
@@ -61,9 +61,11 @@ export class Season {
   })
   snapshot_status?: ESnapshotStatus;
 
+  @Expose({ groups: ['response'] })
   @Prop({
     type: Object,
   })
+  @Type(() => NftCollection)
   nft_collection?: NftCollection;
 
   @ApiProperty({ type: String })
@@ -92,6 +94,24 @@ export class Season {
 
   @Prop({ required: true, type: String })
   created_by: string;
+
+  @Expose({ groups: ['response'] })
+  @ApiProperty({ type: Date, required: false })
+  @Prop({ type: 'Date', required: false })
+  start_mint_at?: Date;
+
+  @Expose({ groups: ['response'] })
+  @Prop({ type: 'Date', required: false })
+  start_fcfs_mint_at?: Date;
+
+  @Expose({ groups: ['response'] })
+  @ApiProperty({ type: Date, required: false })
+  @Prop({ type: 'Date', required: false })
+  end_mint_at?: Date;
+
+  @Expose({ groups: ['response'] })
+  @Prop({ required: false, type: Number })
+  total_mint?: number;
 }
 
 export const SeasonSchema = SchemaFactory.createForClass(Season);

@@ -1,6 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import mongoose, { HydratedDocument } from 'mongoose';
-import { Transform } from 'class-transformer';
+import { Expose, Transform } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
 
 export type NftCollectionDocument = HydratedDocument<NftCollection>;
@@ -18,6 +18,7 @@ export class NftCollection {
   })
   _id?: string;
 
+  @Expose({ groups: ['response'] })
   @ApiProperty({
     type: String,
     required: true,
