@@ -172,14 +172,18 @@ export class Project {
     default: 'https://dev-bucket.kyupad.xyz/public/kyu.jpeg',
   })
   @Prop({ required: true, type: mongoose.Schema.Types.String })
-  @Transform(({ value }) => value.replace('s3:/', process.env.S3_BUCKET))
+  @Transform(({ value }) =>
+    value.replace('s3:/', process.env.AWS_S3_BUCKET_URL),
+  )
   logo: string; // field
 
   @ApiProperty({
     default: 'https://dev-bucket.kyupad.xyz/public/meow.jpeg',
   })
   @Prop({ required: true, type: mongoose.Schema.Types.String })
-  @Transform(({ value }) => value.replace('s3:/', process.env.S3_BUCKET))
+  @Transform(({ value }) =>
+    value.replace('s3:/', process.env.AWS_S3_BUCKET_URL),
+  )
   thumbnail: string; // field
 
   @ApiProperty({ required: false, default: ['Perp DEX', 'Defi'] })
