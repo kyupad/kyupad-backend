@@ -6,12 +6,6 @@ class NftMintingPoolQuery {
     required: false,
   })
   pool_id?: string;
-
-  @ApiProperty({
-    type: String,
-    required: false,
-  })
-  wallet?: string;
 }
 
 export { NftMintingPoolQuery };
