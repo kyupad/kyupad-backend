@@ -13,7 +13,7 @@ const envSchema = Joi.object({
   MONGODB_URI: Joi.string().required(),
   PORT: Joi.number().required().default(8080),
   ALLOWED_ORIGINS: Joi.string().required(),
-  S3_BUCKET: Joi.string().required(),
+  AWS_S3_BUCKET_NAME: Joi.string().required(),
   CRYPTO_ENCRYPT_TOKEN: Joi.string().required(),
   AWS_S3_BUCKET_URL: Joi.string().required(),
   AWS_QUEUE_URL: Joi.string().required(),

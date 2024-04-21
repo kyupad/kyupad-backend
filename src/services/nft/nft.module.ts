@@ -6,6 +6,7 @@ import {
   NftWhiteListSchema,
 } from '@schemas/nft_whitelists.schema';
 import { SeasonServiceModule } from '@/services/season/season.module';
+import { S3Module } from '../aws/s3/s3.module';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { SeasonServiceModule } from '@/services/season/season.module';
     ]),
     NftServiceModule,
     SeasonServiceModule,
+    S3Module,
   ],
   providers: [NftService],
   exports: [NftService],
