@@ -57,16 +57,6 @@ export class NftService {
               JSON.stringify(merkleRoof),
               process.env.CRYPTO_ENCRYPT_TOKEN as string,
             );
-            if (process.env.STAGE === 'dev') {
-              const merkleRoofDev = getMerkleProof2(
-                pool.holders || [],
-                wallet || '',
-              );
-              mintingPool.merkle_proof_dev = encrypt(
-                JSON.stringify(merkleRoofDev),
-                process.env.CRYPTO_ENCRYPT_TOKEN as string,
-              );
-            }
           }
         } else if (
           (idx === 0 && !poolId) ||
@@ -95,16 +85,6 @@ export class NftService {
               JSON.stringify(merkleRoof),
               process.env.CRYPTO_ENCRYPT_TOKEN as string,
             );
-            if (process.env.STAGE === 'dev') {
-              const merkleRoofDev = getMerkleProof2(
-                pool.holders || [],
-                wallet || '',
-              );
-              mintingPool.merkle_proof_dev = encrypt(
-                JSON.stringify(merkleRoofDev),
-                process.env.CRYPTO_ENCRYPT_TOKEN as string,
-              );
-            }
           }
         } else {
           activePools.push(

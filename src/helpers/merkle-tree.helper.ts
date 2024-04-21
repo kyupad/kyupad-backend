@@ -1,6 +1,5 @@
 import { MerkleTree } from 'merkletreejs';
 import keccak256 from 'keccak256';
-import * as fs from 'node:fs';
 
 const getMerkleRootString = (wallets: string[]): string => {
   wallets.sort();
@@ -12,7 +11,7 @@ const getMerkleRootString = (wallets: string[]): string => {
   return merkle_root.toString('hex');
 };
 
-const getMerkleProof = (wallets: string[], wallet: string): number[][] => {
+const getMerkleProof2 = (wallets: string[], wallet: string): number[][] => {
   wallets.sort();
   const leafNode = wallets.map((addr) => keccak256(addr));
   const merkleTree = new MerkleTree(leafNode, keccak256, { sortPairs: true });
@@ -20,7 +19,7 @@ const getMerkleProof = (wallets: string[], wallet: string): number[][] => {
   return getProof.map((item) => Array.from(item.data));
 };
 
-const getMerkleProof2 = (
+const getMerkleProof = (
   wallets: string[],
   wallet: string,
 ): { position: 'left' | 'right'; data: string }[] => {
@@ -36,7 +35,7 @@ const getMerkleProof2 = (
   });
 };
 
-const getMerkleTree = (wallets: string[], wallet: string): MerkleTree => {
+const getMerkleTree = (wallets: string[]): MerkleTree => {
   wallets.sort();
   const leafNode = wallets.map((addr) => keccak256(addr));
   return new MerkleTree(leafNode, keccak256, { sortPairs: true });
