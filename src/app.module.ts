@@ -17,6 +17,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { ProjectModule } from '@usecases/project/project.module';
 import { SeasonModule } from '@usecases/season/season.module';
 import { NftModule } from '@usecases/nft/nft.module';
+import { CommonModule } from '@usecases/common/common.module';
 
 @Module({
   imports: [
@@ -39,6 +40,7 @@ import { NftModule } from '@usecases/nft/nft.module';
     ProjectModule,
     SeasonModule,
     NftModule,
+    CommonModule,
     ClsModule.forRoot({
       middleware: {
         mount: true,
@@ -81,6 +83,10 @@ import { NftModule } from '@usecases/nft/nft.module';
       {
         path: 'nft',
         module: NftModule,
+      },
+      {
+        path: 'common',
+        module: CommonModule,
       },
     ]),
   ],
