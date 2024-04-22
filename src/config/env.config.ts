@@ -12,4 +12,5 @@ export default () => ({
   CRYPTO_ENCRYPT_TOKEN: process.env.CRYPTO_ENCRYPT_TOKEN,
   AWS_S3_BUCKET_URL: process.env.AWS_S3_BUCKET_URL,
   AWS_QUEUE_URL: process.env.AWS_QUEUE_URL,
+  HELIUS_WEBHOOK_TOKEN: process.env.HELIUS_WEBHOOK_TOKEN,
 });

@@ -7,12 +7,13 @@ import {
 } from '@nestjs/swagger';
 import { MintingPoolRoundResponse } from '@usecases/nft/nft.response';
 import { DefaultResponse } from '@/interfaces/common.interface';
-import { IHeliusHookBody } from '@usecases/common/common.input';
+import { NftService } from '@/services/nft/nft.service';
+import { HeliusEventHook } from '@usecases/common/common.response';
 
 @Controller()
 @ApiTags('common')
 export class CommonController {
-  constructor() {}
+  constructor(private readonly nftService: NftService) {}
 
   @Post('/helius/webhook')
   @ApiOkResponse({
@@ -21,14 +22,18 @@ export class CommonController {
   @ApiBadRequestResponse({ description: 'Bad Request' })
   @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
   async hook(
-    @Body() data: IHeliusHookBody,
+    @Body() data: HeliusEventHook[],
     @Req() req: any,
   ): Promise<DefaultResponse> {
-    console.log('----data', JSON.stringify(data));
-    console.log('----header', JSON.stringify(req.headers));
+    await this.nftService.syncNftFromWebHook(
+      data,
+      req.headers['authorization'],
+    );
     return {
       statusCode: 200,
-      data: { status: 'SUCCESS' },
+      data: {
+        status: 'SUCCESS',
+      },
     };
   }
 }
