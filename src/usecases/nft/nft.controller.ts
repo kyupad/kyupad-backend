@@ -84,13 +84,11 @@ export class NftController {
       throw new BadRequestException('symbol is required');
     }
 
-    const url = await this.nftService.generateCNftMetaData(body);
+    const result = await this.nftService.generateCNftMetaData(body);
 
     return {
       statusCode: 200,
-      data: {
-        url,
-      },
+      data: result,
     };
   }
 }
