@@ -5,16 +5,26 @@ import { InjectModel } from '@nestjs/mongoose';
 import mongoose, { FilterQuery, Model } from 'mongoose';
 import { plainToInstance } from 'class-transformer';
 import { MintingPoolRoundDto, PoolDto } from '@usecases/nft/nft.response';
-import { encrypt, getMerkleProof, getMerkleProof2 } from '@/helpers';
+import { encrypt, getMerkleProof, isEmpty } from '@/helpers';
+import { ConfigService } from '@nestjs/config';
+import { S3Service } from '../aws/s3/s3.service';
+import { GenerateCnftMetaDataBody } from '@/usecases/nft/nft.type';
 
 @Injectable()
 export class NftService {
+  private readonly AWS_S3_BUCKET_URL: string;
+  private readonly WEB_URL: string;
   constructor(
     @InjectModel(NftWhiteList.name)
     private readonly nftWhiteListModel: Model<NftWhiteList>,
     @Inject(SeasonService)
     private readonly seasonService: SeasonService,
-  ) {}
+    private readonly configService: ConfigService,
+    private readonly s3Service: S3Service,
+  ) {
+    this.AWS_S3_BUCKET_URL = this.configService.get('AWS_S3_BUCKET_URL')!;
+    this.WEB_URL = this.configService.get('WEB_URL')!;
+  }
 
   async mintingPool(
     poolId?: string,
@@ -150,5 +160,46 @@ export class NftService {
       }
       return pool;
     });
+  }
+
+  async generateCnftMetaData({
+    name,
+    symbol,
+    description,
+    seller_fee_basis_points,
+    creators,
+    id,
+  }: GenerateCnftMetaDataBody) {
+    const metadata = {
+      name,
+      description,
+      symbol,
+      image: this.AWS_S3_BUCKET_URL + '/public/images/nft/kyupad.jpg',
+      external_url: this.WEB_URL,
+      seller_fee_basis_points,
+      attributes: [],
+      properties: {
+        files: [
+          {
+            id: 'portrait',
+            uri: this.AWS_S3_BUCKET_URL + '/public/images/nft/kyupad.jpg',
+            type: 'image/jpeg',
+          },
+        ],
+        category: 'image',
+        collection: {
+          name,
+          family: symbol,
+        },
+        creators: isEmpty(creators) ? [] : creators,
+        pool_id: id,
+      },
+    };
+
+    const url = await this.s3Service.uploadCnftMetadata({
+      data: JSON.stringify(metadata),
+      id,
+    });
+    return url;
   }
 }

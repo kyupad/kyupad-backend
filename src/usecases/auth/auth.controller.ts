@@ -59,6 +59,7 @@ export class AuthController {
       'JWT_ACCESS_TOKEN_SECRET',
     )!;
   }
+
   @Get('signin-data')
   @ApiOperation({ summary: 'Get signin data payload' })
   @ApiOkResponse({ type: SigninDataResponse })
@@ -77,10 +78,7 @@ export class AuthController {
         'Clicking Sign or Approve only means you have proved this wallet is owned by you. This request will not trigger any blockchain transaction or cost any gas fee.',
       version: '1',
       nonce,
-      chainId:
-        this.CHAIN_ID === CHAIN_ID.Testnet
-          ? CHAIN_ID.Testnet
-          : CHAIN_ID.Mainnet,
+      chainId: this.CHAIN_ID,
       issuedAt: currentDateTime,
     };
 

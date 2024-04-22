@@ -1,15 +1,28 @@
-import { Controller, Get, Query } from '@nestjs/common';
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  Get,
+  Post,
+  Query,
+} from '@nestjs/common';
 import {
   ApiOkResponse,
   ApiTags,
   ApiBadRequestResponse,
   ApiInternalServerErrorResponse,
+  ApiBody,
 } from '@nestjs/swagger';
 import { NftService } from '@/services/nft/nft.service';
 import { MintingPoolRoundResponse } from '@usecases/nft/nft.response';
 import { NftMintingPoolQuery } from '@usecases/nft/nft.input';
 import { ClsService } from 'nestjs-cls';
 import { JwtService } from '@nestjs/jwt';
+import {
+  GenerateCnftMetaDataBody,
+  GenerateCnftMetadataResponse,
+} from './nft.type';
+import { isEmpty } from '@/helpers';
 
 @Controller()
 @ApiTags('nft')
@@ -39,6 +52,44 @@ export class NftController {
     return {
       statusCode: 200,
       data: nft,
+    };
+  }
+
+  @Post('/metadata')
+  @ApiBody({ type: GenerateCnftMetaDataBody })
+  @ApiOkResponse({ type: GenerateCnftMetadataResponse })
+  @ApiBadRequestResponse({ description: 'Bad Request' })
+  @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
+  async uploadMetadata(
+    @Body() body: GenerateCnftMetaDataBody,
+  ): Promise<GenerateCnftMetadataResponse> {
+    if (isEmpty(body)) {
+      throw new BadRequestException('body is empty');
+    }
+
+    if (!body?.id) {
+      throw new BadRequestException('id is required');
+    }
+
+    if (!body?.name) {
+      throw new BadRequestException('name is required');
+    }
+
+    if (typeof body?.seller_fee_basis_points !== 'number') {
+      throw new BadRequestException('seller_fee_basis_points is required');
+    }
+
+    if (!body?.symbol) {
+      throw new BadRequestException('symbol is required');
+    }
+
+    const url = await this.nftService.generateCnftMetaData(body);
+
+    return {
+      statusCode: 200,
+      data: {
+        url,
+      },
     };
   }
 }

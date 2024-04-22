@@ -8,7 +8,7 @@ export default () => ({
   MONGODB_URI: process.env.MONGODB_URI,
   PORT: process.env.PORT || 8080,
   ALLOWED_ORIGINS: process.env.ALLOWED_ORIGINS,
-  S3_BUCKET: process.env.S3_BUCKET,
+  AWS_S3_BUCKET_NAME: process.env.AWS_S3_BUCKET_NAME,
   CRYPTO_ENCRYPT_TOKEN: process.env.CRYPTO_ENCRYPT_TOKEN,
   AWS_S3_BUCKET_URL: process.env.AWS_S3_BUCKET_URL,
   AWS_QUEUE_URL: process.env.AWS_QUEUE_URL,
