@@ -1,8 +1,13 @@
-import { BadRequestException, Inject, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Inject,
+  Injectable,
+  Logger,
+} from '@nestjs/common';
 import { SeasonService } from '@/services/season/season.service';
 import { NftWhiteList } from '@schemas/nft_whitelists.schema';
 import { InjectConnection, InjectModel } from '@nestjs/mongoose';
-import mongoose, { FilterQuery, Model } from 'mongoose';
+import mongoose, { FilterQuery, Model, UpdateQuery } from 'mongoose';
 import { plainToInstance } from 'class-transformer';
 import { MintingPoolRoundDto, PoolDto } from '@usecases/nft/nft.response';
 import { encrypt, getMerkleProof, isEmpty } from '@/helpers';
@@ -10,9 +15,11 @@ import { ConfigService } from '@nestjs/config';
 import { S3Service } from '../aws/s3/s3.service';
 import { GenerateCnftMetaDataBody } from '@/usecases/nft/nft.type';
 import { KyupadNft } from '@schemas/kyupad_nft.schema';
+import { HeliusEventHook } from '@usecases/common/common.response';
 
 @Injectable()
 export class NftService {
+  private logger = new Logger(NftService.name);
   private readonly AWS_S3_BUCKET_URL: string;
   private readonly WEB_URL: string;
 
@@ -36,10 +43,13 @@ export class NftService {
     wallet?: string,
   ): Promise<MintingPoolRoundDto> {
     const season = await this.seasonService.activeSeason();
-    const pools = await this.listPool({
-      season_id: season._id,
-      is_active_pool: true,
-    });
+    const [pools, nftHolderOfSeason] = await Promise.all([
+      this.listPool({
+        season_id: season._id,
+        is_active_pool: true,
+      }),
+      this.countNftByWalletOfSeason(season._id, wallet),
+    ]);
     if (!pools || pools.length === 0)
       throw new BadRequestException('Pools of season not found');
     const response = new MintingPoolRoundDto();
@@ -62,7 +72,9 @@ export class NftService {
           pool_image: collection.icon,
         };
         if (collection.symbol === 'FCFS') {
-          mintingPool.is_active = pool.holders?.includes(wallet || 'NONE');
+          mintingPool.is_active =
+            nftHolderOfSeason.length < (season.nft_per_user_limit || 2) &&
+            pool.holders?.includes(wallet || 'NONE');
           response.fcfs_round = {
             current_pool: mintingPool,
           };
@@ -84,7 +96,13 @@ export class NftService {
               new mongoose.Types.ObjectId(pool._id),
             ))
         ) {
-          mintingPool.is_active = pool.holders?.includes(wallet || 'NONE');
+          const nftHolderOfPool = nftHolderOfSeason.filter((info) => {
+            return String(info.pool_id) === String(pool._id);
+          });
+          mintingPool.is_active =
+            nftHolderOfPool.length < (pool.total_mint_per_wallet || 1) &&
+            nftHolderOfSeason.length < (season.nft_per_user_limit || 2) &&
+            pool.holders?.includes(wallet || 'NONE');
           response.community_round = {
             current_pool: mintingPool,
           };
@@ -213,7 +231,7 @@ export class NftService {
           off_chain_id: String(nft._id),
         },
       };
-      const key = `public/metadata/cnft/${nftInput.season_id}/${String(nft._id)}.json`;
+      const key = `public/metadata/cnft/${nftInput.season_id}/${id}/${String(nft._id)}.json`;
       const url = await this.s3Service.uploadCnftMetadata({
         data: JSON.stringify(metadata),
         key,
@@ -222,5 +240,71 @@ export class NftService {
     });
     await session.endSession();
     return url;
+  }
+
+  async syncNftFromWebHook(
+    transactions: HeliusEventHook[],
+    authorization: string,
+  ): Promise<void> {
+    if (authorization !== process.env.HELIUS_WEBHOOK_TOKEN) return;
+    await Promise.all(
+      transactions.map(async (transaction) => {
+        let signature = 'UNKNOWN';
+        try {
+          if (transaction.signature) signature = transaction.signature;
+          if (transaction?.type === 'COMPRESSED_NFT_MINT') {
+            this.logger.log(
+              `Sync [COMPRESSED_NFT_MINT] of signature [${transaction.signature}]...`,
+            );
+            if (transaction?.transactionError) {
+              this.logger.error(
+                `Cannot sync [COMPRESSED_NFT_MINT] of signature [${transaction.signature}]`,
+              );
+            } else {
+              if (
+                transaction.events.compressed &&
+                transaction.events.compressed.length > 0
+              ) {
+                const compressedData = transaction.events.compressed[0];
+                const uri = compressedData?.metadata.uri;
+                const info = uri.split('metadata/cnft/')[1].split('/');
+                const nftId = info[1].replace('.json', '');
+                const nftUpdateData: UpdateQuery<KyupadNft> = {
+                  collection_address: compressedData?.metadata.collection.key,
+                  nft_address: compressedData?.assetId,
+                  owner_address: compressedData?.newLeafOwner,
+                  signature: transaction.signature,
+                };
+                await this.kyupadNftModel.updateOne(
+                  {
+                    _id: new mongoose.Types.ObjectId(nftId),
+                  },
+                  nftUpdateData,
+                );
+                this.logger.log(
+                  `Sync [COMPRESSED_NFT_MINT] of signature [${transaction.signature}] id [${compressedData.assetId}] successful`,
+                );
+              }
+            }
+          }
+        } catch (e) {
+          this.logger.error(
+            `Cannot sync [COMPRESSED_NFT_MINT] of signature [${signature}] ${e.stack}`,
+          );
+        }
+      }),
+    );
+  }
+
+  async countNftByWalletOfSeason(
+    seasonId: any,
+    wallet?: string,
+  ): Promise<KyupadNft[]> {
+    if (!wallet) return [];
+    const nfts = await this.kyupadNftModel.find({
+      owner_address: wallet,
+      season_id: seasonId,
+    });
+    return nfts;
   }
 }

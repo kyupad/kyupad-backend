@@ -17,6 +17,7 @@ const envSchema = Joi.object({
   CRYPTO_ENCRYPT_TOKEN: Joi.string().required(),
   AWS_S3_BUCKET_URL: Joi.string().required(),
   AWS_QUEUE_URL: Joi.string().required(),
+  HELIUS_WEBHOOK_TOKEN: Joi.string().required(),
 });
 
 export { envSchema };

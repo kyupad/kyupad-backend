@@ -112,6 +112,9 @@ export class Season {
   @Expose({ groups: ['response'] })
   @Prop({ required: false, type: Number })
   total_mint?: number;
+
+  @Prop({ type: Number, default: 2 })
+  nft_per_user_limit?: number;
 }
 
 export const SeasonSchema = SchemaFactory.createForClass(Season);
