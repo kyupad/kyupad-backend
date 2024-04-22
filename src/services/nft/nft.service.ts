@@ -52,7 +52,7 @@ export class NftService {
         const mintingPool: PoolDto = {
           pool_id: String(pool._id || 'NONE'),
           pool_name: collection.name,
-          pool_symbol: collection.symbol,
+          pool_symbol: season.nft_collection?.symbol || 'KYUPAD',
           start_time: pool.start_time,
           end_time: pool.end_time,
           mint_fee: pool.mint_fee,
