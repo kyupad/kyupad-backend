@@ -120,6 +120,11 @@ class MintingPoolRoundDto {
   contract_address?: string;
 
   @ApiProperty({
+    type: String,
+  })
+  merkle_tree?: string;
+
+  @ApiProperty({
     type: MintingPoolDto,
   })
   community_round: MintingPoolDto;
