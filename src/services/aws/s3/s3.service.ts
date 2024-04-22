@@ -21,14 +21,14 @@ export class S3Service {
 
   async uploadCnftMetadata({
     data,
-    id,
+    key,
   }: {
     data: string;
-    id: string;
+    key: string;
   }): Promise<string> {
     const input: PutObjectCommandInput = {
       Bucket: this.AWS_S3_BUCKET_NAME,
-      Key: `public/metadata/cnft/${id}.json`,
+      Key: key,
       Body: data,
       ContentType: 'application/json',
     };

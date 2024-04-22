@@ -1,7 +1,7 @@
 import { BadRequestException, Inject, Injectable } from '@nestjs/common';
 import { SeasonService } from '@/services/season/season.service';
 import { NftWhiteList } from '@schemas/nft_whitelists.schema';
-import { InjectModel } from '@nestjs/mongoose';
+import { InjectConnection, InjectModel } from '@nestjs/mongoose';
 import mongoose, { FilterQuery, Model } from 'mongoose';
 import { plainToInstance } from 'class-transformer';
 import { MintingPoolRoundDto, PoolDto } from '@usecases/nft/nft.response';
@@ -9,18 +9,23 @@ import { encrypt, getMerkleProof, isEmpty } from '@/helpers';
 import { ConfigService } from '@nestjs/config';
 import { S3Service } from '../aws/s3/s3.service';
 import { GenerateCnftMetaDataBody } from '@/usecases/nft/nft.type';
+import { KyupadNft } from '@schemas/kyupad_nft.schema';
 
 @Injectable()
 export class NftService {
   private readonly AWS_S3_BUCKET_URL: string;
   private readonly WEB_URL: string;
+
   constructor(
     @InjectModel(NftWhiteList.name)
     private readonly nftWhiteListModel: Model<NftWhiteList>,
+    @InjectModel(KyupadNft.name)
+    private readonly kyupadNftModel: Model<KyupadNft>,
     @Inject(SeasonService)
     private readonly seasonService: SeasonService,
     private readonly configService: ConfigService,
     private readonly s3Service: S3Service,
+    @InjectConnection() private readonly connection: mongoose.Connection,
   ) {
     this.AWS_S3_BUCKET_URL = this.configService.get('AWS_S3_BUCKET_URL')!;
     this.WEB_URL = this.configService.get('WEB_URL')!;
@@ -162,7 +167,7 @@ export class NftService {
     });
   }
 
-  async generateCnftMetaData({
+  async generateCNftMetaData({
     name,
     symbol,
     description,
@@ -170,36 +175,52 @@ export class NftService {
     creators,
     id,
   }: GenerateCnftMetaDataBody) {
-    const metadata = {
-      name,
-      description,
-      symbol,
-      image: this.AWS_S3_BUCKET_URL + '/public/images/nft/kyupad.jpg',
-      external_url: this.WEB_URL,
-      seller_fee_basis_points,
-      attributes: [],
-      properties: {
-        files: [
-          {
-            id: 'portrait',
-            uri: this.AWS_S3_BUCKET_URL + '/public/images/nft/kyupad.jpg',
-            type: 'image/jpeg',
-          },
-        ],
-        category: 'image',
-        collection: {
-          name,
-          family: symbol,
-        },
-        creators: isEmpty(creators) ? [] : creators,
+    const season = await this.seasonService.activeSeason();
+    const session = await this.connection.startSession();
+    const url = await session.withTransaction(async () => {
+      const nftInput: KyupadNft = {
         pool_id: id,
-      },
-    };
-
-    const url = await this.s3Service.uploadCnftMetadata({
-      data: JSON.stringify(metadata),
-      id,
+        nft_name: name,
+        season_id: String(season._id),
+      };
+      const results = await this.kyupadNftModel.create([nftInput], { session });
+      const nft = results[0];
+      if (!nft || !nft._id)
+        throw new BadRequestException('Can not generate nft uri');
+      const metadata = {
+        name,
+        description,
+        symbol,
+        image: this.AWS_S3_BUCKET_URL + '/public/images/nft/kyupad.jpg',
+        external_url: this.WEB_URL,
+        seller_fee_basis_points,
+        attributes: [],
+        properties: {
+          files: [
+            {
+              id: 'portrait',
+              uri: this.AWS_S3_BUCKET_URL + '/public/images/nft/kyupad.jpg',
+              type: 'image/jpeg',
+            },
+          ],
+          category: 'image',
+          collection: {
+            name,
+            family: symbol,
+          },
+          creators: isEmpty(creators) ? [] : creators,
+          pool_id: id,
+          off_chain_id: String(nft._id),
+        },
+      };
+      const key = `public/metadata/cnft/${nftInput.season_id}/${String(nft._id)}.json`;
+      const url = await this.s3Service.uploadCnftMetadata({
+        data: JSON.stringify(metadata),
+        key,
+      });
+      return url;
     });
+    await session.endSession();
     return url;
   }
 }
