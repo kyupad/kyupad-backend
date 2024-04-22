@@ -24,7 +24,8 @@ export class CommonController {
     @Body() data: IHeliusHookBody,
     @Req() req: any,
   ): Promise<DefaultResponse> {
-    console.log('----req', data, req);
+    console.log('----data', JSON.stringify(data));
+    console.log('----header', JSON.stringify(req.headers));
     return {
       statusCode: 200,
       data: { status: 'SUCCESS' },
