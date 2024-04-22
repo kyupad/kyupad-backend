@@ -4,10 +4,6 @@ import { ApiProperty } from '@nestjs/swagger';
 class GenerateCnftMetaDataBody {
   @ApiProperty()
   id: string;
-  @ApiProperty()
-  name: string;
-  @ApiProperty()
-  symbol: string;
   @ApiProperty({ required: false })
   description?: string;
   @ApiProperty()
@@ -19,10 +15,20 @@ class GenerateCnftMetaDataBody {
 class GenerateCnftMetadataResult {
   @ApiProperty()
   url: string;
+
+  @ApiProperty()
+  name: string;
+
+  @ApiProperty()
+  symbol: string;
 }
 
 class GenerateCnftMetadataResponse extends withBaseResponse(
   GenerateCnftMetadataResult,
 ) {}
 
-export { GenerateCnftMetaDataBody, GenerateCnftMetadataResponse };
+export {
+  GenerateCnftMetaDataBody,
+  GenerateCnftMetadataResponse,
+  GenerateCnftMetadataResult,
+};

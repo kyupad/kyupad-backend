@@ -13,7 +13,10 @@ import { MintingPoolRoundDto, PoolDto } from '@usecases/nft/nft.response';
 import { encrypt, getMerkleProof, isEmpty } from '@/helpers';
 import { ConfigService } from '@nestjs/config';
 import { S3Service } from '../aws/s3/s3.service';
-import { GenerateCnftMetaDataBody } from '@/usecases/nft/nft.type';
+import {
+  GenerateCnftMetaDataBody,
+  GenerateCnftMetadataResult,
+} from '@/usecases/nft/nft.type';
 import { KyupadNft } from '@schemas/kyupad_nft.schema';
 import { HeliusEventHook } from '@usecases/common/common.response';
 
@@ -186,60 +189,65 @@ export class NftService {
   }
 
   async generateCNftMetaData({
-    name,
-    symbol,
     description,
     seller_fee_basis_points,
     creators,
     id,
-  }: GenerateCnftMetaDataBody) {
+  }: GenerateCnftMetaDataBody): Promise<GenerateCnftMetadataResult> {
     const season = await this.seasonService.activeSeason();
     const session = await this.connection.startSession();
-    const url = await session.withTransaction(async () => {
-      const nftInput: KyupadNft = {
-        pool_id: id,
-        nft_name: name,
-        season_id: String(season._id),
-      };
-      const results = await this.kyupadNftModel.create([nftInput], { session });
-      const nft = results[0];
-      if (!nft || !nft._id)
-        throw new BadRequestException('Can not generate nft uri');
-      const metadata = {
-        name,
-        description,
-        symbol,
-        image: this.AWS_S3_BUCKET_URL + '/public/images/nft/kyupad.jpg',
-        external_url: this.WEB_URL,
-        seller_fee_basis_points,
-        attributes: [],
-        properties: {
-          files: [
-            {
-              id: 'portrait',
-              uri: this.AWS_S3_BUCKET_URL + '/public/images/nft/kyupad.jpg',
-              type: 'image/jpeg',
-            },
-          ],
-          category: 'image',
-          collection: {
-            name,
-            family: symbol,
-          },
-          creators: isEmpty(creators) ? [] : creators,
+    const collection = season.nft_collection;
+    const result: GenerateCnftMetadataResult = await session.withTransaction(
+      async () => {
+        const nftInput: KyupadNft = {
           pool_id: id,
-          off_chain_id: String(nft._id),
-        },
-      };
-      const key = `public/metadata/cnft/${nftInput.season_id}/${id}/${String(nft._id)}.json`;
-      const url = await this.s3Service.uploadCnftMetadata({
-        data: JSON.stringify(metadata),
-        key,
-      });
-      return url;
-    });
+          nft_name: season.season_name,
+          season_id: String(season._id),
+        };
+        const results = await this.kyupadNftModel.create([nftInput], {
+          session,
+        });
+        const nft = results[0];
+        if (!nft || !nft._id)
+          throw new BadRequestException('Can not generate nft uri');
+        const metadata = {
+          name: collection?.name || 'Kyupad',
+          description,
+          symbol: collection?.symbol || 'KYU',
+          image: this.AWS_S3_BUCKET_URL + '/public/images/nft/kyupad.jpg',
+          external_url: this.WEB_URL,
+          seller_fee_basis_points,
+          attributes: [],
+          properties: {
+            files: [
+              {
+                id: 'portrait',
+                uri: this.AWS_S3_BUCKET_URL + '/public/images/nft/kyupad.jpg',
+                type: 'image/jpeg',
+              },
+            ],
+            category: 'image',
+            collection: {
+              name: collection?.name || 'Kyupad',
+              family: collection?.symbol || 'KYU',
+            },
+            creators: isEmpty(creators) ? [] : creators,
+          },
+        };
+        const key = `public/metadata/cnft/${nftInput.season_id}/${id}/${String(nft._id)}.json`;
+        const url = await this.s3Service.uploadCnftMetadata({
+          data: JSON.stringify(metadata),
+          key,
+        });
+        return {
+          url,
+          name: metadata.name,
+          symbol: metadata.symbol,
+        };
+      },
+    );
     await session.endSession();
-    return url;
+    return result;
   }
 
   async syncNftFromWebHook(
