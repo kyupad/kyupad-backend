@@ -58,6 +58,7 @@ export class NftService {
     const response = new MintingPoolRoundDto();
     response.collection_address = season.nft_collection?.address;
     response.contract_address = season.nft_contract;
+    response.merkle_tree = season.merkle_tree;
     const activePools: PoolDto[] = [];
     pools.forEach((pool, idx) => {
       if (pool.collection && pool.collection.length > 0) {

@@ -115,6 +115,9 @@ export class Season {
 
   @Prop({ type: Number, default: 2 })
   nft_per_user_limit?: number;
+
+  @Prop({ type: 'string' })
+  merkle_tree?: string;
 }
 
 export const SeasonSchema = SchemaFactory.createForClass(Season);

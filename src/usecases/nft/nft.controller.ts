@@ -72,16 +72,8 @@ export class NftController {
       throw new BadRequestException('id is required');
     }
 
-    if (!body?.name) {
-      throw new BadRequestException('name is required');
-    }
-
     if (typeof body?.seller_fee_basis_points !== 'number') {
       throw new BadRequestException('seller_fee_basis_points is required');
-    }
-
-    if (!body?.symbol) {
-      throw new BadRequestException('symbol is required');
     }
 
     const result = await this.nftService.generateCNftMetaData(body);
