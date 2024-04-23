@@ -111,7 +111,7 @@ export class Season {
 
   @Expose({ groups: ['response'] })
   @Prop({ required: false, type: Number })
-  total_mint?: number;
+  total?: number;
 
   @Prop({ type: Number, default: 2 })
   nft_per_user_limit?: number;
@@ -122,6 +122,9 @@ export class Season {
 
   @ApiProperty({ type: Number, required: false })
   minted_total?: number;
+
+  @ApiProperty({ type: Number, required: false })
+  my_minted_total?: number;
 }
 
 export const SeasonSchema = SchemaFactory.createForClass(Season);

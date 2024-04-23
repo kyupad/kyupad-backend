@@ -363,7 +363,11 @@ export class NftService {
     );
   }
 
-  async countMintedTotal(seasonId: string, poolId?: string): Promise<number> {
+  async countMintedTotal(
+    seasonId: string,
+    poolId?: string,
+    wallet?: string,
+  ): Promise<number> {
     try {
       const query: FilterQuery<KyupadNft> = {
         season_id: seasonId,
@@ -372,6 +376,7 @@ export class NftService {
         },
       };
       if (poolId) query.pool_id = poolId;
+      if (wallet) query.owner_address = wallet;
       const count = await this.kyupadNftModel.countDocuments(query);
       return count || 0;
     } catch (e) {
