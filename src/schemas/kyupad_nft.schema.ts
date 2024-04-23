@@ -36,6 +36,10 @@ export class KyupadNft {
 
   @ApiProperty({ type: String })
   @Prop({ type: String, required: false })
+  request_wallet?: string;
+
+  @ApiProperty({ type: String })
+  @Prop({ type: String, required: false })
   owner_address?: string;
 
   @Prop({ type: String, required: false })

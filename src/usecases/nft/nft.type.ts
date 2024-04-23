@@ -21,6 +21,9 @@ class GenerateCnftMetadataResult {
 
   @ApiProperty()
   symbol: string;
+
+  @ApiProperty()
+  id: string;
 }
 
 class GenerateCnftMetadataResponse extends withBaseResponse(
