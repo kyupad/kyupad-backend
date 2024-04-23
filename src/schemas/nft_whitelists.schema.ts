@@ -2,13 +2,14 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import mongoose, { HydratedDocument } from 'mongoose';
 import { ApiProperty } from '@nestjs/swagger';
 import { NftCollection } from '@schemas/nft_collections.schema';
-import { Expose } from 'class-transformer';
 import { IsNotEmpty } from 'class-validator';
+import { Expose } from 'class-transformer';
 
 export type NftWhiteListDocument = HydratedDocument<NftWhiteList>;
 
 @Schema({ timestamps: true })
 export class NftWhiteList {
+  @Expose({ groups: ['road-map'] })
   @Prop({
     required: true,
     type: mongoose.Schema.Types.ObjectId,
@@ -20,6 +21,7 @@ export class NftWhiteList {
   })
   _id?: string;
 
+  @Expose({ groups: ['road-map'] })
   @Prop({
     required: true,
     type: mongoose.Schema.Types.String,
@@ -37,6 +39,7 @@ export class NftWhiteList {
   })
   collection_address?: string;
 
+  @Expose({ groups: ['road-map'] })
   @Prop({ required: false, type: String })
   community_name?: string;
 
@@ -88,10 +91,12 @@ export class NftWhiteList {
   @Prop({ required: false, type: String })
   merkle_root?: string;
 
+  @Expose({ groups: ['road-map'] })
   @ApiProperty({ type: Date })
   @Prop({ required: false, type: 'Date' })
   start_time?: Date;
 
+  @Expose({ groups: ['road-map'] })
   @ApiProperty({ type: Date })
   @Prop({ required: false, type: 'Date' })
   end_time?: Date;
@@ -124,6 +129,7 @@ export class NftWhiteList {
   @Prop({ required: false, type: Number })
   total_mint_per_wallet: number;
 
+  @Expose({ groups: ['road-map'] })
   @ApiProperty({
     type: Boolean,
     default: false,

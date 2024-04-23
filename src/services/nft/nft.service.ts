@@ -317,4 +317,33 @@ export class NftService {
     });
     return nfts;
   }
+
+  async mintingRoundRoadMap(): Promise<NftWhiteList[]> {
+    const season = await this.seasonService.activeSeason();
+    if (!season) return [];
+    const pools = await this.nftWhiteListModel
+      .find({
+        season_id: String(season._id),
+        start_time: {
+          $ne: null,
+        },
+      })
+      .select({
+        _id: 1,
+        season_id: 1,
+        community_name: 1,
+        start_time: 1,
+        end_time: 1,
+        is_active_pool: 1,
+      })
+      .sort({ start_time: 1 });
+    if (!pools || pools.length === 0) return [];
+    return plainToInstance(
+      NftWhiteList,
+      JSON.parse(JSON.stringify(pools)) as any[],
+      {
+        groups: ['road-map'],
+      },
+    );
+  }
 }

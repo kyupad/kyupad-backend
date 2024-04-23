@@ -1,6 +1,7 @@
 import { Expose } from 'class-transformer';
 import { withBaseResponse } from '@/interfaces/common.interface';
 import { ApiProperty } from '@nestjs/swagger';
+import { NftWhiteList } from '@schemas/nft_whitelists.schema';
 
 class PoolDto {
   @Expose({ groups: ['detail', 'list'] })
@@ -145,9 +146,14 @@ class MintingPoolRoundResponse extends withBaseResponse(
   {},
 ) {}
 
+class MintingRoundRoadMapResponse extends withBaseResponse(NftWhiteList, {
+  isArray: true,
+}) {}
+
 export {
   PoolDto,
   MintingPoolRoundResponse,
   MintingPoolRoundDto,
   MintingPoolDto,
+  MintingRoundRoadMapResponse,
 };
