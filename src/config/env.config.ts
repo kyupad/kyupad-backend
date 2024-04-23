@@ -13,4 +13,6 @@ export default () => ({
   AWS_S3_BUCKET_URL: process.env.AWS_S3_BUCKET_URL,
   AWS_QUEUE_URL: process.env.AWS_QUEUE_URL,
   HELIUS_WEBHOOK_TOKEN: process.env.HELIUS_WEBHOOK_TOKEN,
+  HELIUS_API_URL: process.env.HELIUS_API_URL,
+  HELIUS_API_KEY: process.env.HELIUS_API_KEY,
 });
