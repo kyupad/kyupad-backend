@@ -93,6 +93,11 @@ class PoolDto {
     required: false,
   })
   merkle_proof_dev?: string;
+
+  @ApiProperty({
+    type: String,
+  })
+  destination_wallet?: string;
 }
 
 class MintingPoolDto {
