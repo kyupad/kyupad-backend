@@ -208,12 +208,15 @@ export class NftService {
     });
   }
 
-  async generateCNftMetaData({
-    description,
-    seller_fee_basis_points,
-    creators,
-    id,
-  }: GenerateCnftMetaDataBody): Promise<GenerateCnftMetadataResult> {
+  async generateCNftMetaData(
+    {
+      description,
+      seller_fee_basis_points,
+      creators,
+      id,
+    }: GenerateCnftMetaDataBody,
+    wallet: string,
+  ): Promise<GenerateCnftMetadataResult> {
     const season = await this.seasonService.activeSeason();
     const session = await this.connection.startSession();
     const collection = season.nft_collection;
@@ -223,6 +226,7 @@ export class NftService {
           pool_id: id,
           nft_name: season.season_name,
           season_id: String(season._id),
+          request_wallet: wallet,
         };
         const results = await this.kyupadNftModel.create([nftInput], {
           session,
@@ -263,6 +267,7 @@ export class NftService {
           url,
           name: metadata.name,
           symbol: metadata.symbol,
+          id: String(nft._id),
         };
       },
     );
@@ -385,5 +390,23 @@ export class NftService {
       );
       return 0;
     }
+  }
+
+  async synNftBySignature(
+    id: string,
+    poolId: string,
+    signature: string,
+    owner: string,
+  ): Promise<void> {
+    await this.kyupadNftModel.findOneAndUpdate(
+      {
+        _id: new mongoose.Types.ObjectId(id),
+        request_wallet: owner,
+        owner_address: {
+          $eq: null,
+        },
+      },
+      { owner_address: owner, pool_id: poolId },
+    );
   }
 }

@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { IsString } from 'class-validator';
 
 class NftMintingPoolQuery {
   @ApiProperty({
@@ -8,4 +9,34 @@ class NftMintingPoolQuery {
   pool_id?: string;
 }
 
-export { NftMintingPoolQuery };
+class NftSyncBySignatureInput {
+  @ApiProperty({
+    type: String,
+    required: true,
+  })
+  @IsString()
+  id?: string;
+
+  @ApiProperty({
+    type: String,
+    required: true,
+  })
+  @IsString()
+  pool_id: string;
+
+  @ApiProperty({
+    type: String,
+    required: true,
+  })
+  @IsString()
+  signature: string;
+
+  @ApiProperty({
+    type: String,
+    required: true,
+  })
+  @IsString()
+  wallet: string;
+}
+
+export { NftMintingPoolQuery, NftSyncBySignatureInput };
