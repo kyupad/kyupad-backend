@@ -45,16 +45,34 @@ export class NftService {
     poolId?: string,
     wallet?: string,
   ): Promise<MintingPoolRoundDto> {
+    let poolMinted = 0;
     const season = await this.seasonService.activeSeason();
-    const [pools, nftHolderOfSeason] = await Promise.all([
+    const arrFn: (
+      | Promise<NftWhiteList[]>
+      | Promise<KyupadNft[]>
+      | Promise<number>
+    )[] = [
       this.listPool({
         season_id: season._id,
         is_active_pool: true,
       }),
       this.countNftByWalletOfSeason(season._id, wallet),
-    ]);
+    ];
+    if (poolId) {
+      arrFn.push(this.countMintedTotal(String(season._id), poolId));
+    }
+    const arrResult = await Promise.all(arrFn);
+    const pools = arrResult[0] as NftWhiteList[];
+    const nftHolderOfSeason = arrResult[1] as KyupadNft[];
     if (!pools || pools.length === 0)
       throw new BadRequestException('Pools of season not found');
+    if (poolId) poolMinted = arrResult[2] as number;
+    else {
+      poolMinted = await this.countMintedTotal(
+        String(season._id),
+        String(pools[0]._id),
+      );
+    }
     const response = new MintingPoolRoundDto();
     response.collection_address = season.nft_collection?.address;
     response.contract_address = season.nft_contract;
@@ -70,7 +88,7 @@ export class NftService {
           start_time: pool.start_time,
           end_time: pool.end_time,
           mint_fee: pool.mint_fee,
-          minted_total: 0,
+          minted_total: poolMinted,
           pool_supply: pool.pool_supply,
           total_mint_per_wallet: pool.total_mint_per_wallet,
           pool_image: collection.icon,
@@ -318,12 +336,10 @@ export class NftService {
     return nfts;
   }
 
-  async mintingRoundRoadMap(): Promise<NftWhiteList[]> {
-    const season = await this.seasonService.activeSeason();
-    if (!season) return [];
+  async mintingRoundRoadMap(seasonId: string): Promise<NftWhiteList[]> {
     const pools = await this.nftWhiteListModel
       .find({
-        season_id: String(season._id),
+        season_id: String(seasonId),
         start_time: {
           $ne: null,
         },
@@ -345,5 +361,24 @@ export class NftService {
         groups: ['road-map'],
       },
     );
+  }
+
+  async countMintedTotal(seasonId: string, poolId?: string): Promise<number> {
+    try {
+      const query: FilterQuery<KyupadNft> = {
+        season_id: seasonId,
+        owner_address: {
+          $ne: null,
+        },
+      };
+      if (poolId) query.pool_id = poolId;
+      const count = await this.kyupadNftModel.countDocuments(query);
+      return count || 0;
+    } catch (e) {
+      this.logger.error(
+        `Can not count nft total of season [${seasonId}] pool [${poolId || 'NONE'}]`,
+      );
+      return 0;
+    }
   }
 }

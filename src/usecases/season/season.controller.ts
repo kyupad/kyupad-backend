@@ -7,25 +7,37 @@ import {
   ApiBadRequestResponse,
   ApiInternalServerErrorResponse,
 } from '@nestjs/swagger';
-import { SeasonsResponse } from '@usecases/season/season.response';
+import { ActiveSeasonResponse } from '@usecases/season/season.response';
+import { NftService } from '@/services/nft/nft.service';
 
 @Controller()
 @ApiTags('season')
 export class SeasonController {
-  constructor(private readonly seasonService: SeasonService) {}
+  constructor(
+    private readonly seasonService: SeasonService,
+    private readonly nftService: NftService,
+  ) {}
 
   @Get('/active')
   @ApiOperation({ summary: 'Active Season Info' })
   @ApiOkResponse({
-    type: SeasonsResponse,
+    type: ActiveSeasonResponse,
   })
   @ApiBadRequestResponse({ description: 'Bad Request' })
   @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
-  async activeSeason(): Promise<SeasonsResponse> {
+  async activeSeason(): Promise<ActiveSeasonResponse> {
     const season = await this.seasonService.activeSeason();
+    const [totalMinted, roadMap] = await Promise.all([
+      this.nftService.countMintedTotal(String(season._id)),
+      this.nftService.mintingRoundRoadMap(String(season._id)),
+    ]);
+    season.minted_total = totalMinted;
     return {
       statusCode: 200,
-      data: season,
+      data: {
+        season,
+        minting_round_road_map: roadMap,
+      },
     };
   }
 }
