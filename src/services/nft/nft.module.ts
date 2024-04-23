@@ -8,6 +8,7 @@ import {
 import { SeasonServiceModule } from '@/services/season/season.module';
 import { S3Module } from '../aws/s3/s3.module';
 import { KyupadNft, KyupadNftSchema } from '@schemas/kyupad_nft.schema';
+import { HeliusServiceModule } from '@/services/helius/helius.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { KyupadNft, KyupadNftSchema } from '@schemas/kyupad_nft.schema';
     NftServiceModule,
     SeasonServiceModule,
     S3Module,
+    HeliusServiceModule,
   ],
   providers: [NftService],
   exports: [NftService],

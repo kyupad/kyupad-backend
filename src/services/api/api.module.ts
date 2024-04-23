@@ -5,4 +5,4 @@ import { ApiService } from '@/services/api/api.service';
   providers: [ApiService],
   exports: [ApiService],
 })
-export class ApiModule {}
+export class ApiServiceModule {}
