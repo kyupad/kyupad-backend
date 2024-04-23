@@ -74,6 +74,7 @@ export class NftService {
           pool_supply: pool.pool_supply,
           total_mint_per_wallet: pool.total_mint_per_wallet,
           pool_image: collection.icon,
+          destination_wallet: pool.destination_wallet,
         };
         if (collection.symbol === 'FCFS') {
           mintingPool.is_active =

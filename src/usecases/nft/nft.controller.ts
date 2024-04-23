@@ -48,7 +48,6 @@ export class NftController {
       const userInfo = this.jwtService.decode(accessToken) as any;
       wallet = userInfo?.sub;
     }
-    wallet = query.wallet;
     const nft = await this.nftService.mintingPool(query.pool_id, wallet);
     return {
       statusCode: 200,

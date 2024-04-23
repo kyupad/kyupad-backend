@@ -3,6 +3,7 @@ import mongoose, { HydratedDocument } from 'mongoose';
 import { ApiProperty } from '@nestjs/swagger';
 import { NftCollection } from '@schemas/nft_collections.schema';
 import { Expose } from 'class-transformer';
+import { IsNotEmpty } from 'class-validator';
 
 export type NftWhiteListDocument = HydratedDocument<NftWhiteList>;
 
@@ -129,6 +130,14 @@ export class NftWhiteList {
   })
   @Prop({ default: false, type: Boolean })
   is_active_pool?: boolean;
+
+  @ApiProperty({
+    type: String,
+    required: true,
+  })
+  @Prop({ require: true, type: String })
+  @IsNotEmpty()
+  destination_wallet?: string;
 }
 
 export const NftWhiteListSchema = SchemaFactory.createForClass(NftWhiteList);

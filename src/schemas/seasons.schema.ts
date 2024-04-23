@@ -116,6 +116,7 @@ export class Season {
   @Prop({ type: Number, default: 2 })
   nft_per_user_limit?: number;
 
+  @Expose({ groups: ['response'] })
   @Prop({ type: 'string' })
   merkle_tree?: string;
 }
