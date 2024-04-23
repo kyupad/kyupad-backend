@@ -14,7 +14,10 @@ import {
   ApiBody,
 } from '@nestjs/swagger';
 import { NftService } from '@/services/nft/nft.service';
-import { MintingPoolRoundResponse } from '@usecases/nft/nft.response';
+import {
+  MintingPoolRoundResponse,
+  MintingRoundRoadMapResponse,
+} from '@usecases/nft/nft.response';
 import { NftMintingPoolQuery } from '@usecases/nft/nft.input';
 import { ClsService } from 'nestjs-cls';
 import { JwtService } from '@nestjs/jwt';
@@ -23,6 +26,7 @@ import {
   GenerateCnftMetadataResponse,
 } from './nft.type';
 import { isEmpty } from '@/helpers';
+import { HttpStatusCode } from 'axios';
 
 @Controller()
 @ApiTags('nft')
@@ -80,6 +84,20 @@ export class NftController {
     return {
       statusCode: 200,
       data: result,
+    };
+  }
+
+  @Get('/minting-round-roadmap')
+  @ApiOkResponse({
+    type: MintingRoundRoadMapResponse,
+  })
+  @ApiBadRequestResponse({ description: 'Bad Request' })
+  @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
+  async mintingRoundRoadMap(): Promise<MintingRoundRoadMapResponse> {
+    const data = await this.nftService.mintingRoundRoadMap();
+    return {
+      statusCode: HttpStatusCode.Ok,
+      data: data,
     };
   }
 }
