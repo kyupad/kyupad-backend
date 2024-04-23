@@ -8,7 +8,7 @@ import {
 import { MintingPoolRoundResponse } from '@usecases/nft/nft.response';
 import { DefaultResponse } from '@/interfaces/common.interface';
 import { NftService } from '@/services/nft/nft.service';
-import { HeliusEventHook } from '@usecases/common/common.response';
+import { HeliusEventHook } from '@/services/helius/helius.response';
 
 @Controller()
 @ApiTags('common')

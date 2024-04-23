@@ -18,7 +18,8 @@ import {
   GenerateCnftMetadataResult,
 } from '@/usecases/nft/nft.type';
 import { KyupadNft } from '@schemas/kyupad_nft.schema';
-import { HeliusEventHook } from '@usecases/common/common.response';
+import { HeliusEventHook } from '@/services/helius/helius.response';
+import { HeliusService } from '@/services/helius/helius.service';
 
 @Injectable()
 export class NftService {
@@ -33,6 +34,8 @@ export class NftService {
     private readonly kyupadNftModel: Model<KyupadNft>,
     @Inject(SeasonService)
     private readonly seasonService: SeasonService,
+    @Inject(HeliusService)
+    private readonly heliusService: HeliusService,
     private readonly configService: ConfigService,
     private readonly s3Service: S3Service,
     @InjectConnection() private readonly connection: mongoose.Connection,
@@ -293,32 +296,7 @@ export class NftService {
               this.logger.error(
                 `Cannot sync [COMPRESSED_NFT_MINT] of signature [${transaction.signature}]`,
               );
-            } else {
-              if (
-                transaction.events.compressed &&
-                transaction.events.compressed.length > 0
-              ) {
-                const compressedData = transaction.events.compressed[0];
-                const uri = compressedData?.metadata.uri;
-                const info = uri.split('metadata/cnft/')[1].split('/');
-                const nftId = info[1].replace('.json', '');
-                const nftUpdateData: UpdateQuery<KyupadNft> = {
-                  collection_address: compressedData?.metadata.collection.key,
-                  nft_address: compressedData?.assetId,
-                  owner_address: compressedData?.newLeafOwner,
-                  signature: transaction.signature,
-                };
-                await this.kyupadNftModel.updateOne(
-                  {
-                    _id: new mongoose.Types.ObjectId(nftId),
-                  },
-                  nftUpdateData,
-                );
-                this.logger.log(
-                  `Sync [COMPRESSED_NFT_MINT] of signature [${transaction.signature}] id [${compressedData.assetId}] successful`,
-                );
-              }
-            }
+            } else await this.updateKyuPadNftByTx(transaction);
           }
         } catch (e) {
           this.logger.error(
@@ -398,15 +376,47 @@ export class NftService {
     signature: string,
     owner: string,
   ): Promise<void> {
-    await this.kyupadNftModel.findOneAndUpdate(
-      {
-        _id: new mongoose.Types.ObjectId(id),
-        request_wallet: owner,
-        owner_address: {
-          $eq: null,
+    try {
+      await this.kyupadNftModel.findOneAndUpdate(
+        {
+          _id: new mongoose.Types.ObjectId(id),
+          request_wallet: owner,
+          owner_address: {
+            $eq: null,
+          },
         },
-      },
-      { owner_address: owner, pool_id: poolId },
+        { owner_address: owner, pool_id: poolId },
+      );
+    } catch (e) {}
+    const transactions = await this.heliusService.getTxInfo(signature);
+    const mintTx = transactions.find(
+      (tx) => tx?.type === 'COMPRESSED_NFT_MINT',
     );
+    if (mintTx) await this.updateKyuPadNftByTx(mintTx);
+  }
+
+  async updateKyuPadNftByTx(transaction: HeliusEventHook): Promise<void> {
+    if (
+      transaction.events.compressed &&
+      transaction.events.compressed.length > 0
+    ) {
+      const compressedData = transaction.events.compressed[0];
+      const uri = compressedData?.metadata.uri;
+      const info = uri.split('metadata/cnft/')[1].split('/');
+      const nftId = info[2].replace('.json', '');
+      const nftUpdateData: UpdateQuery<KyupadNft> = {
+        collection_address: compressedData?.metadata.collection.key,
+        nft_address: compressedData?.assetId,
+        owner_address: compressedData?.newLeafOwner,
+        signature: transaction.signature,
+      };
+      await this.kyupadNftModel.findByIdAndUpdate(
+        new mongoose.Types.ObjectId(nftId),
+        nftUpdateData,
+      );
+      this.logger.log(
+        `Sync [COMPRESSED_NFT_MINT] of signature [${transaction.signature}] id [${compressedData.assetId}] successful`,
+      );
+    }
   }
 }

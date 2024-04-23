@@ -15,4 +15,18 @@ interface GetRequestOption<I, O> {
   url: string;
 }
 
-export { GetRequestOption, ClassType };
+interface PostRequestOption<O> {
+  plain?: boolean;
+  cls?: ClassType<O>;
+  defaultResponse?: any;
+  bodyMode?: 'default' | 'urlencoded' | 'form-data';
+  header?: IncomingHttpHeaders;
+  logPrivate?: {
+    mode: 'BODY' | 'PARAMS';
+    fields: string[];
+  };
+  dataKey?: 'success' | string;
+  byPassError?: boolean;
+}
+
+export { GetRequestOption, ClassType, PostRequestOption };
