@@ -119,6 +119,9 @@ export class Season {
   @Expose({ groups: ['response'] })
   @Prop({ type: 'string' })
   merkle_tree?: string;
+
+  @ApiProperty({ type: Number, required: false })
+  minted_total?: number;
 }
 
 export const SeasonSchema = SchemaFactory.createForClass(Season);
