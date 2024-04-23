@@ -18,6 +18,8 @@ const envSchema = Joi.object({
   AWS_S3_BUCKET_URL: Joi.string().required(),
   AWS_QUEUE_URL: Joi.string().required(),
   HELIUS_WEBHOOK_TOKEN: Joi.string().required(),
+  HELIUS_API_URL: Joi.string().required(),
+  HELIUS_API_KEY: Joi.string().required(),
 });
 
 export { envSchema };

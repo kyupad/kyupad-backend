@@ -30,13 +30,6 @@ class NftSyncBySignatureInput {
   })
   @IsString()
   signature: string;
-
-  @ApiProperty({
-    type: String,
-    required: true,
-  })
-  @IsString()
-  wallet: string;
 }
 
 export { NftMintingPoolQuery, NftSyncBySignatureInput };
