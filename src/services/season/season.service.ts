@@ -10,13 +10,13 @@ export class SeasonService {
     @InjectModel(Season.name) private readonly seasonModel: Model<Season>,
   ) {}
 
-  async activeSeason(): Promise<Season> {
+  async activeSeason(excludeExtraneousValues = true): Promise<Season> {
     const season = await this.seasonModel.findOne({
       is_active: true,
     });
     if (!season) throw new NotFoundException('Season not exist');
     return plainToInstance(Season, JSON.parse(JSON.stringify(season)), {
-      excludeExtraneousValues: true,
+      excludeExtraneousValues: excludeExtraneousValues,
       groups: ['response'],
     });
   }
