@@ -20,7 +20,6 @@ import {
 import { KyupadNft } from '@schemas/kyupad_nft.schema';
 import { HeliusEventHook } from '@/services/helius/helius.response';
 import { HeliusService } from '@/services/helius/helius.service';
-import * as fs from 'node:fs';
 
 @Injectable()
 export class NftService {
@@ -50,7 +49,7 @@ export class NftService {
     wallet?: string,
   ): Promise<MintingPoolRoundDto> {
     let poolMinted = 0;
-    const season = await this.seasonService.activeSeason();
+    const season = await this.seasonService.activeSeason(false);
     const arrFn: (
       | Promise<NftWhiteList[]>
       | Promise<KyupadNft[]>
