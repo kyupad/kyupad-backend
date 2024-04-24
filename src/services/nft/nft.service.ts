@@ -20,6 +20,7 @@ import {
 import { KyupadNft } from '@schemas/kyupad_nft.schema';
 import { HeliusEventHook } from '@/services/helius/helius.response';
 import { HeliusService } from '@/services/helius/helius.service';
+import * as fs from 'node:fs';
 
 @Injectable()
 export class NftService {
@@ -97,21 +98,7 @@ export class NftService {
           pool_image: collection.icon,
           destination_wallet: pool.destination_wallet,
         };
-        if (collection.symbol === 'FCFS') {
-          mintingPool.is_active =
-            nftHolderOfSeason.length < (season.nft_per_user_limit || 2) &&
-            pool.holders?.includes(wallet || 'NONE');
-          response.fcfs_round = {
-            current_pool: mintingPool,
-          };
-          if (mintingPool.is_active) {
-            const merkleRoof = getMerkleProof(pool.holders || [], wallet || '');
-            mintingPool.merkle_proof = encrypt(
-              JSON.stringify(merkleRoof),
-              process.env.CRYPTO_ENCRYPT_TOKEN as string,
-            );
-          }
-        } else if (
+        if (
           (idx === 0 && !poolId) ||
           (poolId &&
             (idx !== 0 ||
@@ -125,7 +112,10 @@ export class NftService {
           const nftHolderOfPool = nftHolderOfSeason.filter((info) => {
             return String(info.pool_id) === String(pool._id);
           });
+          if (wallet)
+            mintingPool.user_pool_minted_total = nftHolderOfPool.length;
           mintingPool.is_active =
+            mintingPool.minted_total <= mintingPool.pool_supply &&
             nftHolderOfPool.length < (pool.total_mint_per_wallet || 1) &&
             nftHolderOfSeason.length < (season.nft_per_user_limit || 2) &&
             pool.holders?.includes(wallet || 'NONE');
