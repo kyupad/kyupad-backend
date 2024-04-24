@@ -99,6 +99,11 @@ class PoolDto {
     type: String,
   })
   destination_wallet?: string;
+
+  @ApiProperty({
+    type: String,
+  })
+  user_pool_minted_total?: number;
 }
 
 class MintingPoolDto {
