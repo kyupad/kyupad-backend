@@ -147,6 +147,24 @@ export class NftWhiteList {
   @Prop({ require: true, type: String })
   @IsNotEmpty()
   destination_wallet?: string;
+
+  @ApiProperty({
+    type: String,
+    required: false,
+  })
+  @Prop({ required: false, type: String })
+  backup_merkle_root?: string;
+
+  @Prop({ required: true, type: [String] })
+  @ApiProperty({
+    isArray: true,
+    type: String,
+    required: true,
+  })
+  backup_holders?: string[];
+
+  @Prop({ required: false, type: 'Date' })
+  modify_holder_time?: Date;
 }
 
 export const NftWhiteListSchema = SchemaFactory.createForClass(NftWhiteList);
