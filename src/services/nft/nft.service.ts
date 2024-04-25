@@ -458,6 +458,7 @@ export class NftService {
       );
     } catch (e) {}
     const transactions = await this.heliusService.getTxInfo(signature);
+    console.log('--------', signature, JSON.stringify(transactions));
     const mintTx = transactions.find(
       (tx) => tx?.type === 'COMPRESSED_NFT_MINT',
     );
