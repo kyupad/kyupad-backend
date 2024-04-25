@@ -136,6 +136,11 @@ class MintingPoolRoundDto {
   merkle_tree?: string;
 
   @ApiProperty({
+    type: String,
+  })
+  lookup_table_address?: string;
+
+  @ApiProperty({
     type: MintingPoolDto,
   })
   community_round: MintingPoolDto;

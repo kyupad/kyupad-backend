@@ -120,6 +120,10 @@ export class Season {
   @Prop({ type: 'string' })
   merkle_tree?: string;
 
+  @Expose({ groups: ['response'] })
+  @Prop({ type: 'string' })
+  lookup_table_address?: string;
+
   @ApiProperty({ type: Number, required: false })
   minted_total?: number;
 
