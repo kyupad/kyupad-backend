@@ -7,7 +7,12 @@ import {
 import { SeasonService } from '@/services/season/season.service';
 import { NftWhiteList } from '@schemas/nft_whitelists.schema';
 import { InjectConnection, InjectModel } from '@nestjs/mongoose';
-import mongoose, { FilterQuery, Model, UpdateQuery } from 'mongoose';
+import mongoose, {
+  FilterQuery,
+  Model,
+  PipelineStage,
+  UpdateQuery,
+} from 'mongoose';
 import { plainToInstance } from 'class-transformer';
 import { MintingPoolRoundDto, PoolDto } from '@usecases/nft/nft.response';
 import { encrypt, getMerkleProof, isEmpty } from '@/helpers';
@@ -20,6 +25,11 @@ import {
 import { KyupadNft } from '@schemas/kyupad_nft.schema';
 import { HeliusEventHook } from '@/services/helius/helius.response';
 import { HeliusService } from '@/services/helius/helius.service';
+
+interface IGlobalCacheHolder {
+  last_update_time?: number;
+  holders?: string[];
+}
 
 @Injectable()
 export class NftService {
@@ -82,72 +92,103 @@ export class NftService {
     response.merkle_tree = season.merkle_tree;
     response.lookup_table_address = season.lookup_table_address;
     const activePools: PoolDto[] = [];
-    pools.forEach((pool, idx) => {
-      if (pool.collection && pool.collection.length > 0) {
-        const collection = pool.collection[0];
-        const mintingPool: PoolDto = {
-          pool_id: String(pool._id || 'NONE'),
-          pool_name: collection.name,
-          pool_symbol: season.nft_collection?.symbol || 'KYUPAD',
-          start_time: pool.start_time,
-          end_time: pool.end_time,
-          mint_fee: pool.mint_fee,
-          minted_total: poolMinted,
-          pool_supply: pool.pool_supply,
-          total_mint_per_wallet: pool.total_mint_per_wallet,
-          pool_image: collection.icon,
-          destination_wallet: pool.destination_wallet,
-        };
-        if (
-          (idx === 0 && !poolId) ||
-          (poolId &&
-            (idx !== 0 ||
-              new mongoose.Types.ObjectId(poolId).equals(
-                new mongoose.Types.ObjectId(pools[0]._id),
-              )) &&
-            new mongoose.Types.ObjectId(poolId).equals(
-              new mongoose.Types.ObjectId(pool._id),
-            ))
-        ) {
-          const nftHolderOfPool = nftHolderOfSeason.filter((info) => {
-            return String(info.pool_id) === String(pool._id);
-          });
-          if (wallet) {
-            mintingPool.user_pool_minted_total = nftHolderOfPool.length;
-            mintingPool.is_minted =
-              nftHolderOfPool.length >= (pool.total_mint_per_wallet || 1);
-          }
-          mintingPool.is_active =
-            mintingPool.minted_total <= mintingPool.pool_supply &&
-            nftHolderOfPool.length < (pool.total_mint_per_wallet || 1) &&
-            nftHolderOfSeason.length < (season.nft_per_user_limit || 2) &&
-            pool.holders?.includes(wallet || 'NONE');
-          response.community_round = {
-            current_pool: mintingPool,
+    await Promise.all(
+      pools.map(async (pool, idx) => {
+        if (pool.collection && pool.collection.length > 0) {
+          const collection = pool.collection[0];
+          const mintingPool: PoolDto = {
+            pool_id: String(pool._id || 'NONE'),
+            pool_name: collection.name,
+            pool_symbol: season.nft_collection?.symbol || 'KYUPAD',
+            start_time: pool.start_time,
+            end_time: pool.end_time,
+            mint_fee: pool.mint_fee,
+            minted_total: poolMinted,
+            pool_supply: pool.pool_supply,
+            total_mint_per_wallet: pool.total_mint_per_wallet,
+            pool_image: collection.icon,
+            destination_wallet: pool.destination_wallet,
           };
-          activePools.push(
-            plainToInstance(PoolDto, mintingPool, {
-              excludeExtraneousValues: true,
-              groups: ['list'],
-            }),
-          );
-          if (mintingPool.is_active) {
-            const merkleRoof = getMerkleProof(pool.holders || [], wallet || '');
-            mintingPool.merkle_proof = encrypt(
-              JSON.stringify(merkleRoof),
-              process.env.CRYPTO_ENCRYPT_TOKEN as string,
+          if (
+            (idx === 0 && !poolId) ||
+            (poolId &&
+              (idx !== 0 ||
+                new mongoose.Types.ObjectId(poolId).equals(
+                  new mongoose.Types.ObjectId(pools[0]._id),
+                )) &&
+              new mongoose.Types.ObjectId(poolId).equals(
+                new mongoose.Types.ObjectId(pool._id),
+              ))
+          ) {
+            const nftHolderOfPool = nftHolderOfSeason.filter((info) => {
+              return String(info.pool_id) === String(pool._id);
+            });
+            if (wallet) {
+              let holders = [];
+              // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+              // @ts-expect-error
+              const holderCache = global[
+                `pool-hd-${String(pool._id)}`
+              ] as IGlobalCacheHolder;
+              if (
+                holderCache &&
+                holderCache?.last_update_time &&
+                holderCache.holders &&
+                holderCache?.holders?.length > 0 &&
+                new Date(
+                  pool.modify_holder_time || '2001-01-01T00:01:00.000Z',
+                ).getTime() < holderCache?.last_update_time
+              ) {
+                holders = holderCache?.holders || [];
+              } else {
+                holders = await this.getHoldersOfPool(pool._id);
+                // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+                // @ts-expect-error
+                global[`pool-hd-${String(pool._id)}`] = {
+                  last_update_time: new Date().getTime(),
+                  holders,
+                } as IGlobalCacheHolder;
+              }
+              pool.holders = holders;
+              mintingPool.user_pool_minted_total = nftHolderOfPool.length;
+              mintingPool.is_minted =
+                nftHolderOfPool.length >= (pool.total_mint_per_wallet || 1);
+            }
+            mintingPool.is_active =
+              mintingPool.minted_total <= mintingPool.pool_supply &&
+              nftHolderOfPool.length < (pool.total_mint_per_wallet || 1) &&
+              nftHolderOfSeason.length < (season.nft_per_user_limit || 2) &&
+              pool.holders?.includes(wallet || 'NONE');
+            response.community_round = {
+              current_pool: mintingPool,
+            };
+            activePools.push(
+              plainToInstance(PoolDto, mintingPool, {
+                excludeExtraneousValues: true,
+                groups: ['list'],
+              }),
+            );
+            if (mintingPool.is_active) {
+              const merkleRoof = getMerkleProof(
+                pool.holders || [],
+                wallet || '',
+              );
+              mintingPool.merkle_proof = encrypt(
+                JSON.stringify(merkleRoof),
+                process.env.CRYPTO_ENCRYPT_TOKEN as string,
+              );
+            }
+          } else {
+            activePools.push(
+              plainToInstance(PoolDto, mintingPool, {
+                excludeExtraneousValues: true,
+                groups: ['list'],
+              }),
             );
           }
-        } else {
-          activePools.push(
-            plainToInstance(PoolDto, mintingPool, {
-              excludeExtraneousValues: true,
-              groups: ['list'],
-            }),
-          );
         }
-      }
-    });
+      }),
+    );
     response.community_round = {
       ...response.community_round,
       active_pools: activePools,
@@ -155,8 +196,11 @@ export class NftService {
     return response;
   }
 
-  async listPool(filter: FilterQuery<NftWhiteList>): Promise<NftWhiteList[]> {
-    const pools: NftWhiteList[] = await this.nftWhiteListModel.aggregate([
+  async listPool(
+    filter: FilterQuery<NftWhiteList>,
+    withoutHolder = true,
+  ): Promise<NftWhiteList[]> {
+    const aggregateInput: PipelineStage[] = [
       {
         $match: filter,
       },
@@ -169,9 +213,24 @@ export class NftService {
         },
       },
       {
+        $project: {
+          holders: 0,
+          backup_holders: 0,
+        },
+      },
+      {
         $sort: { order: 1 },
       },
-    ]);
+    ];
+    if (withoutHolder)
+      aggregateInput.push({
+        $project: {
+          holders: 0,
+          backup_holders: 0,
+        },
+      });
+    const pools: NftWhiteList[] =
+      await this.nftWhiteListModel.aggregate(aggregateInput);
     return pools.map((pool) => {
       if (pool.is_other_community) {
         pool.collection = [
@@ -413,5 +472,12 @@ export class NftService {
         `Sync [COMPRESSED_NFT_MINT] of signature [${transaction.signature}] id [${compressedData.assetId}] successful`,
       );
     }
+  }
+
+  async getHoldersOfPool(id: any): Promise<string[]> {
+    if (!id) return [];
+    const pool = await this.nftWhiteListModel.findById(id);
+    if (!pool) return [];
+    return pool?.holders || [];
   }
 }
