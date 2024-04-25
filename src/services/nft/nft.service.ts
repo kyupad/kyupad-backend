@@ -95,6 +95,15 @@ export class NftService {
     await Promise.all(
       pools.map(async (pool, idx) => {
         if (pool.collection && pool.collection.length > 0) {
+          const currentTime = new Date().getTime();
+          let isOnAir = true;
+          if (pool.start_time && pool.end_time) {
+            if (
+              currentTime < new Date(pool.start_time).getTime() ||
+              currentTime > new Date(pool.end_time).getTime()
+            )
+              isOnAir = false;
+          }
           const collection = pool.collection[0];
           const mintingPool: PoolDto = {
             pool_id: String(pool._id || 'NONE'),
@@ -124,32 +133,34 @@ export class NftService {
               return String(info.pool_id) === String(pool._id);
             });
             if (wallet) {
-              let holders = [];
-              // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-              // @ts-expect-error
-              const holderCache = global[
-                `pool-hd-${String(pool._id)}`
-              ] as IGlobalCacheHolder;
-              if (
-                holderCache &&
-                holderCache?.last_update_time &&
-                holderCache.holders &&
-                holderCache?.holders?.length > 0 &&
-                new Date(
-                  pool.modify_holder_time || '2001-01-01T00:01:00.000Z',
-                ).getTime() < holderCache?.last_update_time
-              ) {
-                holders = holderCache?.holders || [];
-              } else {
-                holders = await this.getHoldersOfPool(pool._id);
+              if (isOnAir) {
+                let holders = [];
                 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
                 // @ts-expect-error
-                global[`pool-hd-${String(pool._id)}`] = {
-                  last_update_time: new Date().getTime(),
-                  holders,
-                } as IGlobalCacheHolder;
+                const holderCache = global[
+                  `pool-hd-${String(pool._id)}`
+                ] as IGlobalCacheHolder;
+                if (
+                  holderCache &&
+                  holderCache?.last_update_time &&
+                  holderCache.holders &&
+                  holderCache?.holders?.length > 0 &&
+                  new Date(
+                    pool.modify_holder_time || '2001-01-01T00:01:00.000Z',
+                  ).getTime() < holderCache?.last_update_time
+                ) {
+                  holders = holderCache?.holders || [];
+                } else {
+                  holders = await this.getHoldersOfPool(pool._id);
+                  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+                  // @ts-expect-error
+                  global[`pool-hd-${String(pool._id)}`] = {
+                    last_update_time: new Date().getTime(),
+                    holders,
+                  } as IGlobalCacheHolder;
+                }
+                pool.holders = holders;
               }
-              pool.holders = holders;
               mintingPool.user_pool_minted_total = nftHolderOfPool.length;
               mintingPool.is_minted =
                 nftHolderOfPool.length >= (pool.total_mint_per_wallet || 1);
@@ -168,7 +179,11 @@ export class NftService {
                 groups: ['list'],
               }),
             );
-            if (mintingPool.is_active) {
+            if (
+              mintingPool.is_active &&
+              pool.holders &&
+              pool.holders?.length > 0
+            ) {
               const merkleRoof = getMerkleProof(
                 pool.holders || [],
                 wallet || '',
