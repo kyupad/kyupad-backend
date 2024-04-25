@@ -112,8 +112,11 @@ export class NftService {
           const nftHolderOfPool = nftHolderOfSeason.filter((info) => {
             return String(info.pool_id) === String(pool._id);
           });
-          if (wallet)
+          if (wallet) {
             mintingPool.user_pool_minted_total = nftHolderOfPool.length;
+            mintingPool.is_minted =
+              nftHolderOfPool.length >= (pool.total_mint_per_wallet || 1);
+          }
           mintingPool.is_active =
             mintingPool.minted_total <= mintingPool.pool_supply &&
             nftHolderOfPool.length < (pool.total_mint_per_wallet || 1) &&
@@ -177,10 +180,12 @@ export class NftService {
             address: `community-${pool.order}`,
             name: pool.community_name || `community-${pool.order}`,
             symbol: `COMMUNITY-${pool.order}`,
-            icon: 's3://public/icons/nfts/community.png'.replace(
-              's3://',
-              `${process.env.AWS_S3_BUCKET_URL}/`,
-            ),
+            icon:
+              pool.community_image ||
+              's3://public/icons/nfts/community.png'.replace(
+                's3://',
+                `${process.env.AWS_S3_BUCKET_URL}/`,
+              ),
           },
         ];
       } else if (pool.collection_address === `FCFS-${pool.season_id}`) {
