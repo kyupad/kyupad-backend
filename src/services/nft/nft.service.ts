@@ -80,6 +80,7 @@ export class NftService {
     response.collection_address = season.nft_collection?.address;
     response.contract_address = season.nft_contract;
     response.merkle_tree = season.merkle_tree;
+    response.lookup_table_address = season.lookup_table_address;
     const activePools: PoolDto[] = [];
     pools.forEach((pool, idx) => {
       if (pool.collection && pool.collection.length > 0) {
