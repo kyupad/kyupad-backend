@@ -83,6 +83,13 @@ class PoolDto {
 
   @Expose({ groups: ['detail'] })
   @ApiProperty({
+    type: Boolean,
+    required: false,
+  })
+  is_minted?: boolean;
+
+  @Expose({ groups: ['detail'] })
+  @ApiProperty({
     type: String,
     required: false,
   })

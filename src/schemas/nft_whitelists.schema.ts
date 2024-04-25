@@ -43,6 +43,9 @@ export class NftWhiteList {
   @Prop({ required: false, type: String })
   community_name?: string;
 
+  @Prop({ required: false, type: String })
+  community_image?: string;
+
   @Prop({ required: true, type: [String] })
   @ApiProperty({
     isArray: true,
