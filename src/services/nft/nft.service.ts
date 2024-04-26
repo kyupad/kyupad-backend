@@ -395,9 +395,6 @@ export class NftService {
     const pools = await this.nftWhiteListModel
       .find({
         season_id: String(seasonId),
-        start_time: {
-          $ne: null,
-        },
       })
       .select({
         _id: 1,
@@ -406,9 +403,13 @@ export class NftService {
         start_time: 1,
         end_time: 1,
         is_active_pool: 1,
-      })
-      .sort({ start_time: 1 });
+      });
     if (!pools || pools.length === 0) return [];
+    pools.sort(
+      (a, b) =>
+        (a.start_time ? new Date(a.start_time).getTime() : 99999999999999) -
+        (b.start_time ? new Date(b.start_time).getTime() : 99999999999999),
+    );
     return plainToInstance(
       NftWhiteList,
       JSON.parse(JSON.stringify(pools)) as any[],
