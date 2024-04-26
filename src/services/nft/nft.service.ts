@@ -91,6 +91,8 @@ export class NftService {
     response.contract_address = season.nft_contract;
     response.merkle_tree = season.merkle_tree;
     response.lookup_table_address = season.lookup_table_address;
+    response.seller_fee_basis_points = season.seller_fee_basis_points || 400;
+    response.creators = season.creators;
     const activePools: PoolDto[] = [];
     await Promise.all(
       pools.map(async (pool, idx) => {

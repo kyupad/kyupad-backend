@@ -129,6 +129,35 @@ export class Season {
 
   @ApiProperty({ type: Number, required: false })
   my_minted_total?: number;
+
+  @Expose({ groups: ['response'] })
+  @Prop({ required: false, type: Object })
+  @Type(() => Creator)
+  creators?: Creator[];
+
+  @Expose({ groups: ['response'] })
+  @Prop({ type: Number, default: 400 })
+  seller_fee_basis_points?: number;
+}
+
+export class Creator {
+  @ApiProperty({
+    type: String,
+    required: false,
+  })
+  address: string;
+
+  @ApiProperty({
+    type: Number,
+    required: false,
+  })
+  share: number;
+
+  @ApiProperty({
+    type: Boolean,
+    required: false,
+  })
+  verified: boolean;
 }
 
 export const SeasonSchema = SchemaFactory.createForClass(Season);
