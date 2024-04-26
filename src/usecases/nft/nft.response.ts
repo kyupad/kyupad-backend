@@ -2,6 +2,8 @@ import { Expose } from 'class-transformer';
 import { withBaseResponse } from '@/interfaces/common.interface';
 import { ApiProperty } from '@nestjs/swagger';
 import { NftWhiteList } from '@schemas/nft_whitelists.schema';
+import { Prop } from '@nestjs/mongoose';
+import { Creator } from '@schemas/seasons.schema';
 
 class PoolDto {
   @Expose({ groups: ['detail', 'list'] })
@@ -156,6 +158,18 @@ class MintingPoolRoundDto {
     type: MintingPoolDto,
   })
   fcfs_round: MintingPoolDto;
+
+  @ApiProperty({
+    type: Creator,
+    required: true,
+  })
+  creators?: Creator[];
+
+  @ApiProperty({
+    type: Number,
+    required: true,
+  })
+  seller_fee_basis_points: number;
 }
 
 class MintingPoolRoundResponse extends withBaseResponse(

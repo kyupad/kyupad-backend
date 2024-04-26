@@ -91,6 +91,8 @@ export class NftService {
     response.contract_address = season.nft_contract;
     response.merkle_tree = season.merkle_tree;
     response.lookup_table_address = season.lookup_table_address;
+    response.seller_fee_basis_points = season.seller_fee_basis_points || 400;
+    response.creators = season.creators;
     const activePools: PoolDto[] = [];
     await Promise.all(
       pools.map(async (pool, idx) => {
@@ -393,9 +395,6 @@ export class NftService {
     const pools = await this.nftWhiteListModel
       .find({
         season_id: String(seasonId),
-        start_time: {
-          $ne: null,
-        },
       })
       .select({
         _id: 1,
@@ -404,9 +403,13 @@ export class NftService {
         start_time: 1,
         end_time: 1,
         is_active_pool: 1,
-      })
-      .sort({ start_time: 1 });
+      });
     if (!pools || pools.length === 0) return [];
+    pools.sort(
+      (a, b) =>
+        (a.start_time ? new Date(a.start_time).getTime() : 99999999999999) -
+        (b.start_time ? new Date(b.start_time).getTime() : 99999999999999),
+    );
     return plainToInstance(
       NftWhiteList,
       JSON.parse(JSON.stringify(pools)) as any[],
@@ -459,6 +462,7 @@ export class NftService {
       );
     } catch (e) {}
     const transactions = await this.heliusService.getTxInfo(signature);
+    console.log('--------', signature, JSON.stringify(transactions));
     const mintTx = transactions.find(
       (tx) => tx?.type === 'COMPRESSED_NFT_MINT',
     );
