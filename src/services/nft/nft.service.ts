@@ -169,6 +169,7 @@ export class NftService {
               mintingPool.minted_total <= mintingPool.pool_supply &&
               nftHolderOfPool.length < (pool.total_mint_per_wallet || 1) &&
               nftHolderOfSeason.length < (season.nft_per_user_limit || 2) &&
+              mintingPool.minted_total < mintingPool.pool_supply &&
               pool.holders?.includes(wallet || 'NONE');
             response.community_round = {
               current_pool: mintingPool,
