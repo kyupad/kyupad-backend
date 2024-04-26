@@ -311,7 +311,9 @@ export class NftService {
           throw new BadRequestException('Can not generate nft uri');
         const metadata = {
           name: collection?.name || 'Kyupad',
-          description,
+          description:
+            description ||
+            'Kyupad NFT Pass Gen 1 is a collection of space-themed cat NFT that offers Holders exclusive perks on Kyupad Launchpad & multiple benefits.',
           symbol: collection?.symbol || 'KYU',
           image: this.AWS_S3_BUCKET_URL + '/public/images/nft/kyupad.jpg',
           external_url: this.WEB_URL,
@@ -325,7 +327,6 @@ export class NftService {
                 type: 'image/jpeg',
               },
             ],
-            category: 'image',
             collection: {
               name: collection?.name || 'Kyupad',
               family: collection?.symbol || 'KYU',
