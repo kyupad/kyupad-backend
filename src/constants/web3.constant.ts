@@ -1,5 +1,5 @@
 enum CHAIN_ID {
-  Mainnet = 'mainnet-beta',
+  Mainnet = 'mainnet',
   Testnet = 'testnet',
   Devnet = 'devnet',
 }
