@@ -331,7 +331,7 @@ export class NftService {
               name: collection?.name || 'Kyupad',
               family: collection?.symbol || 'KYU',
             },
-            creators: isEmpty(creators) ? [] : season.creators || [],
+            creators: season.creators || [],
           },
         };
         const key = `public/metadata/cnft/${nftInput.season_id}/${id}/${String(nft._id)}.json`;
