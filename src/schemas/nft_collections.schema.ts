@@ -37,6 +37,7 @@ export class NftCollection {
   })
   icon: string;
 
+  @Expose({ groups: ['response'] })
   @ApiProperty({
     type: String,
     required: true,
@@ -47,6 +48,7 @@ export class NftCollection {
   @Prop({ required: true, type: String })
   magic_eden_symbol?: string;
 
+  @Expose({ groups: ['response'] })
   @ApiProperty({
     type: String,
     required: true,

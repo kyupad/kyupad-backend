@@ -141,18 +141,21 @@ export class Season {
 }
 
 export class Creator {
+  @Expose({ groups: ['response'] })
   @ApiProperty({
     type: String,
     required: false,
   })
   address: string;
 
+  @Expose({ groups: ['response'] })
   @ApiProperty({
     type: Number,
     required: false,
   })
   share: number;
 
+  @Expose({ groups: ['response'] })
   @ApiProperty({
     type: Boolean,
     required: false,
