@@ -284,12 +284,7 @@ export class NftService {
   }
 
   async generateCNftMetaData(
-    {
-      description,
-      seller_fee_basis_points,
-      creators,
-      id,
-    }: GenerateCnftMetaDataBody,
+    { id }: GenerateCnftMetaDataBody,
     wallet: string,
   ): Promise<GenerateCnftMetadataResult> {
     const season = await this.seasonService.activeSeason();
@@ -312,12 +307,11 @@ export class NftService {
         const metadata = {
           name: collection?.name || 'Kyupad',
           description:
-            description ||
             'Kyupad NFT Pass Gen 1 is a collection of space-themed cat NFT that offers Holders exclusive perks on Kyupad Launchpad & multiple benefits.',
           symbol: collection?.symbol || 'KYU',
           image: this.AWS_S3_BUCKET_URL + '/public/images/nft/kyupad.jpg',
           external_url: this.WEB_URL,
-          seller_fee_basis_points,
+          seller_fee_basis_points: season.seller_fee_basis_points || 900,
           attributes: [],
           properties: {
             files: [
@@ -331,7 +325,7 @@ export class NftService {
               name: collection?.name || 'Kyupad',
               family: collection?.symbol || 'KYU',
             },
-            creators: isEmpty(creators) ? [] : season.creators || [],
+            creators: season.creators || [],
           },
         };
         const key = `public/metadata/cnft/${nftInput.season_id}/${id}/${String(nft._id)}.json`;
