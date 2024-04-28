@@ -49,6 +49,7 @@ export class SeasonController {
     const results = await Promise.all(arrFn);
     season.minted_total = results[0] as number;
     if (wallet) season.my_minted_total = results[2] as number;
+    season.total = 9999;
     return {
       statusCode: 200,
       data: {
