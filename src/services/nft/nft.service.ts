@@ -75,7 +75,7 @@ export class NftService {
       arrFn.push(this.countMintedTotal(String(season._id), poolId));
     }
     const arrResult = await Promise.all(arrFn);
-    const pools = arrResult[0] as NftWhiteList[];
+    let pools = arrResult[0] as NftWhiteList[];
     const nftHolderOfSeason = arrResult[1] as KyupadNft[];
     if (!pools || pools.length === 0)
       throw new BadRequestException('Pools of season not found');
@@ -93,7 +93,17 @@ export class NftService {
     response.lookup_table_address = season.lookup_table_address;
     response.seller_fee_basis_points = season.seller_fee_basis_points || 400;
     response.creators = season.creators;
+    response.priority_fees = season.priority_fees || 100000;
     const activePools: PoolDto[] = [];
+    pools = pools.filter((round) => {
+      if (
+        round.pool_private_whitelist &&
+        round.pool_private_whitelist?.length > 0
+      ) {
+        return round.pool_private_whitelist.includes(wallet || '');
+      }
+      return true;
+    });
     await Promise.all(
       pools.map(async (pool, idx) => {
         if (pool.collection && pool.collection.length > 0) {
@@ -398,6 +408,7 @@ export class NftService {
         start_time: 1,
         end_time: 1,
         is_active_pool: 1,
+        pool_private_whitelist: 1,
       });
     if (!pools || pools.length === 0) return [];
     pools.sort(

@@ -170,6 +170,12 @@ class MintingPoolRoundDto {
     required: true,
   })
   seller_fee_basis_points: number;
+
+  @ApiProperty({
+    type: Number,
+    required: true,
+  })
+  priority_fees: number;
 }
 
 class MintingPoolRoundResponse extends withBaseResponse(
