@@ -32,7 +32,7 @@ export class SeasonController {
   @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
   async activeSeason(): Promise<ActiveSeasonResponse> {
     const accessToken = this.cls.get('accessToken');
-    let wallet;
+    let wallet: string | undefined;
     if (accessToken) {
       const userInfo = this.jwtService.decode(accessToken) as any;
       wallet = userInfo?.sub;
@@ -50,11 +50,21 @@ export class SeasonController {
     season.minted_total = results[0] as number;
     if (wallet) season.my_minted_total = results[2] as number;
     season.total = 9999;
+    const rounds = results[1] as NftWhiteList[];
+    const showRounds = rounds.filter((round) => {
+      if (
+        round.pool_private_whitelist &&
+        round.pool_private_whitelist?.length > 0
+      ) {
+        return round.pool_private_whitelist.includes(wallet || '');
+      }
+      return true;
+    });
     return {
       statusCode: 200,
       data: {
         season,
-        minting_round_road_map: results[1] as NftWhiteList[],
+        minting_round_road_map: showRounds,
       },
     };
   }

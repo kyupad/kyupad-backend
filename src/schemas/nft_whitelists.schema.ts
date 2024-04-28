@@ -165,6 +165,10 @@ export class NftWhiteList {
 
   @Prop({ required: false, type: 'Date' })
   modify_holder_time?: Date;
+
+  @Expose({ groups: ['road-map'] })
+  @Prop({ required: false, type: [String], default: [] })
+  pool_private_whitelist?: string[];
 }
 
 export const NftWhiteListSchema = SchemaFactory.createForClass(NftWhiteList);
