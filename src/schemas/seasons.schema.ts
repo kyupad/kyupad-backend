@@ -138,6 +138,10 @@ export class Season {
   @Expose({ groups: ['response'] })
   @Prop({ type: Number, default: 400 })
   seller_fee_basis_points?: number;
+
+  @Expose({ groups: ['response'] })
+  @Prop({ type: Number, default: 100000 })
+  priority_fees?: number;
 }
 
 export class Creator {

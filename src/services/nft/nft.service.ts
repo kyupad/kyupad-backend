@@ -93,6 +93,7 @@ export class NftService {
     response.lookup_table_address = season.lookup_table_address;
     response.seller_fee_basis_points = season.seller_fee_basis_points || 400;
     response.creators = season.creators;
+    response.priority_fees = season.priority_fees || 100000;
     const activePools: PoolDto[] = [];
     await Promise.all(
       pools.map(async (pool, idx) => {
