@@ -94,6 +94,7 @@ export class NftService {
     }
     const response = new MintingPoolRoundDto();
     response.collection_address = season.nft_collection?.address;
+    response.season_id = String(season._id);
     response.contract_address = season.nft_contract;
     response.merkle_tree = season.merkle_tree;
     response.lookup_table_address = season.lookup_table_address;
