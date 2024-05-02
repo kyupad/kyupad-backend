@@ -7,17 +7,18 @@ import {
   Query,
 } from '@nestjs/common';
 import {
+  ApiBadRequestResponse,
+  ApiBody,
+  ApiInternalServerErrorResponse,
   ApiOkResponse,
   ApiTags,
-  ApiBadRequestResponse,
-  ApiInternalServerErrorResponse,
-  ApiBody,
 } from '@nestjs/swagger';
 import { NftService } from '@/services/nft/nft.service';
 import { MintingPoolRoundResponse } from '@usecases/nft/nft.response';
 import {
   NftMintingPoolQuery,
   NftSyncBySignatureInput,
+  TestAppsyncInput,
 } from '@usecases/nft/nft.input';
 import { ClsService } from 'nestjs-cls';
 import { JwtService } from '@nestjs/jwt';
@@ -27,6 +28,7 @@ import {
 } from './nft.type';
 import { isEmpty } from '@/helpers';
 import { DefaultResponse } from '@/interfaces/common.interface';
+import { EUserAction } from '@/enums';
 
 @Controller()
 @ApiTags('nft')
@@ -113,6 +115,37 @@ export class NftController {
         nftSyncBySignatureInput.signature,
         wallet,
       );
+    return {
+      statusCode: 200,
+      data: {
+        status: 'SUCCESS',
+      },
+    };
+  }
+
+  @Post('/test-appsync')
+  @ApiBody({ type: TestAppsyncInput })
+  @ApiOkResponse({ type: DefaultResponse })
+  @ApiBadRequestResponse({ description: 'Bad Request' })
+  @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
+  async pushMintedAction(
+    @Body() input: TestAppsyncInput,
+  ): Promise<DefaultResponse> {
+    if (process.env.STAGE !== 'dev')
+      return {
+        statusCode: 200,
+        data: {
+          status: 'SUCCESS',
+        },
+      };
+    else
+      await this.nftService.pushMintedAction({
+        input: {
+          ...input,
+          action_type: EUserAction.NFT_MINTED,
+          action_at: new Date().toISOString(),
+        },
+      });
     return {
       statusCode: 200,
       data: {

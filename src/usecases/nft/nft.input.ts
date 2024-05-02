@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsString } from 'class-validator';
+import { EUserAction } from '@/enums';
 
 class NftMintingPoolQuery {
   @ApiProperty({
@@ -32,4 +33,34 @@ class NftSyncBySignatureInput {
   signature: string;
 }
 
-export { NftMintingPoolQuery, NftSyncBySignatureInput };
+class TestAppsyncInput {
+  @ApiProperty({
+    type: String,
+    required: true,
+  })
+  @IsString()
+  season_id: string;
+
+  @ApiProperty({
+    type: String,
+    required: true,
+  })
+  @IsString()
+  pool_id: string;
+
+  @ApiProperty({
+    type: String,
+    required: true,
+  })
+  @IsString()
+  minted_wallet: string;
+
+  @ApiProperty({
+    type: String,
+    required: true,
+  })
+  @IsString()
+  nft_off_chain_id: string;
+}
+
+export { NftMintingPoolQuery, NftSyncBySignatureInput, TestAppsyncInput };
