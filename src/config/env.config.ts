@@ -15,4 +15,5 @@ export default () => ({
   HELIUS_WEBHOOK_TOKEN: process.env.HELIUS_WEBHOOK_TOKEN,
   HELIUS_API_URL: process.env.HELIUS_API_URL,
   HELIUS_API_KEY: process.env.HELIUS_API_KEY,
+  AWS_APPSYNC_ENDPOINT: process.env.AWS_APPSYNC_ENDPOINT,
 });

@@ -15,7 +15,7 @@ import mongoose, {
 } from 'mongoose';
 import { plainToInstance } from 'class-transformer';
 import { MintingPoolRoundDto, PoolDto } from '@usecases/nft/nft.response';
-import { encrypt, getMerkleProof, isEmpty } from '@/helpers';
+import { encrypt, getMerkleProof } from '@/helpers';
 import { ConfigService } from '@nestjs/config';
 import { S3Service } from '../aws/s3/s3.service';
 import {
@@ -25,6 +25,10 @@ import {
 import { KyupadNft } from '@schemas/kyupad_nft.schema';
 import { HeliusEventHook } from '@/services/helius/helius.response';
 import { HeliusService } from '@/services/helius/helius.service';
+import { AppsyncService } from '@/services/aws/appsync/appsync.service';
+import { AppsyncNftActionInput } from '@/services/nft/nft.input';
+import { NFT_ACTION_SCHEMA } from '@/services/nft/Nft.appsyncschema';
+import { EUserAction } from '@/enums';
 
 interface IGlobalCacheHolder {
   last_update_time?: number;
@@ -46,6 +50,8 @@ export class NftService {
     private readonly seasonService: SeasonService,
     @Inject(HeliusService)
     private readonly heliusService: HeliusService,
+    @Inject(AppsyncService)
+    private readonly appsyncService: AppsyncService,
     private readonly configService: ConfigService,
     private readonly s3Service: S3Service,
     @InjectConnection() private readonly connection: mongoose.Connection,
@@ -373,7 +379,9 @@ export class NftService {
               this.logger.error(
                 `Cannot sync [COMPRESSED_NFT_MINT] of signature [${transaction.signature}]`,
               );
-            } else await this.updateKyuPadNftByTx(transaction);
+            } else {
+              await this.updateKyuPadNftByTx(transaction);
+            }
           }
         } catch (e) {
           this.logger.error(
@@ -482,6 +490,8 @@ export class NftService {
       const compressedData = transaction.events.compressed[0];
       const uri = compressedData?.metadata.uri;
       const info = uri.split('metadata/cnft/')[1].split('/');
+      const seasonId = info[0];
+      const poolId = info[1];
       const nftId = info[2].replace('.json', '');
       const nftUpdateData: UpdateQuery<KyupadNft> = {
         collection_address: compressedData?.metadata.collection.key,
@@ -493,6 +503,16 @@ export class NftService {
         new mongoose.Types.ObjectId(nftId),
         nftUpdateData,
       );
+      await this.pushMintedAction({
+        input: {
+          action_type: EUserAction.NFT_MINTED,
+          season_id: seasonId,
+          pool_id: poolId,
+          nft_off_chain_id: nftId,
+          minted_wallet: nftUpdateData.owner_address,
+          action_at: new Date().toISOString(),
+        },
+      });
       this.logger.log(
         `Sync [COMPRESSED_NFT_MINT] of signature [${transaction.signature}] id [${compressedData.assetId}] successful`,
       );
@@ -504,5 +524,22 @@ export class NftService {
     const pool = await this.nftWhiteListModel.findById(id);
     if (!pool) return [];
     return pool?.holders || [];
+  }
+
+  async pushMintedAction(input: AppsyncNftActionInput): Promise<void> {
+    NFT_ACTION_SCHEMA.variables = {
+      input: {
+        ...input.input,
+      },
+    };
+    await this.appsyncService.query<AppsyncNftActionInput, any>(
+      NFT_ACTION_SCHEMA,
+      {
+        cls: AppsyncNftActionInput,
+        plain: true,
+        functionName: NFT_ACTION_SCHEMA.operationName,
+        passError: true,
+      },
+    );
   }
 }
