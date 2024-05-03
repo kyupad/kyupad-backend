@@ -115,6 +115,8 @@ export class ListProjectResult extends OmitType(Project, [
 
 class ListProjectQuery {
   type: EProjectType;
+  limit?: number;
+  skip?: number;
 }
 
 class ListProjectResponse extends withBaseResponse(ListProjectResult, {

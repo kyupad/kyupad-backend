@@ -150,8 +150,8 @@ export class Project {
     required: true,
   })
   @Transform(({ value }) => {
-    if (value) {
-      const buffer = Buffer.from(value.data);
+    if (value?.data) {
+      const buffer = Buffer.from(value);
       const result = buffer.toString('hex');
       const uuid = `${result.slice(0, 8)}-${result.slice(8, 12)}-${result.slice(12, 16)}-${result.slice(16, 20)}-${result.slice(20)}`;
       return uuid;
@@ -245,6 +245,9 @@ export class Project {
     default: EProjectStatus.COLLECTION_PRICE_SNAPSHOT_PROCESSING,
   })
   status?: EProjectStatus;
+
+  @Exclude()
+  registration_start_at_diff?: number;
 }
 
 export const ProjectSchema = SchemaFactory.createForClass(Project);

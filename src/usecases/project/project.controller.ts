@@ -56,6 +56,8 @@ export class ProjectController {
   @ApiBadRequestResponse({ description: 'Bad Request' })
   @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
   @ApiQuery({ enum: EProjectType, name: 'type', required: true })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  @ApiQuery({ name: 'skip', required: false, type: Number })
   async list(@Query() query: ListProjectQuery): Promise<ListProjectResponse> {
     if (!query?.type) {
       throw new BadRequestException('type is required');
@@ -69,7 +71,10 @@ export class ProjectController {
     }
 
     if (query?.type === EProjectType.success) {
-      const success = await this.projectService.listSuccess();
+      const success = await this.projectService.listSuccess({
+        limit: query?.limit,
+        skip: query?.skip,
+      });
       const r = [...JSON.parse(JSON.stringify(success))];
       const result = plainToInstance(
         Project,
@@ -82,9 +87,13 @@ export class ProjectController {
     }
 
     if (query?.type === EProjectType.upcoming) {
-      const upcoming = await this.projectService.listUpcoming();
+      const upcoming = await this.projectService.listUpcoming({
+        limit: query?.limit,
+        skip: query?.skip,
+      });
 
       const r = [...JSON.parse(JSON.stringify(upcoming))];
+
       const result = plainToInstance(
         Project,
         r,

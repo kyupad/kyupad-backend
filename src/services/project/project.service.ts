@@ -37,37 +37,88 @@ export class ProjectService {
     return result;
   }
 
-  async listUpcoming(): Promise<Project[]> {
-    const result = await this.projectModel
-      .find({
-        'timeline.registration_end_at': {
-          $gte: dayjs.utc().toDate(),
+  async listUpcoming(params: {
+    limit?: number;
+    skip?: number;
+  }): Promise<Project[]> {
+    const result = await this.projectModel.aggregate([
+      {
+        $match: {
+          'timeline.investment_end_at': { $gte: dayjs.utc().toDate() },
+          status: EProjectStatus.ACTIVE,
         },
-        status: EProjectStatus.ACTIVE,
-      })
-      .sort({ 'timeline.registration_end_at': 'desc' });
-
-    if (result.length <= 4) {
-      const result = await this.projectModel
-        .find({ status: EProjectStatus.ACTIVE })
-        .sort({ 'timeline.registration_end_at': 'desc' })
-        .limit(3); // sửa sau
-      return result;
-    }
+      },
+      {
+        $addFields: {
+          registration_start_at_diff: {
+            $cond: {
+              if: {
+                $gt: ['$timeline.registration_start_at', dayjs.utc().toDate()],
+              },
+              then: {
+                $subtract: [
+                  '$timeline.registration_start_at',
+                  dayjs.utc().toDate(),
+                ],
+              },
+              else: Number.MAX_SAFE_INTEGER,
+            },
+          },
+        },
+      },
+      {
+        $sort: { registration_start_at_diff: 1 },
+      },
+      {
+        $limit: Number(params?.limit) || 4,
+      },
+      {
+        $skip: Number(params?.skip) || 0,
+      },
+    ]);
 
     return result;
   }
 
-  async listSuccess(): Promise<Project[]> {
-    const result = await this.projectModel
-      .find({
-        'timeline.investment_end_at': {
-          $lte: dayjs.utc().toDate(),
+  async listSuccess(params: {
+    limit?: number;
+    skip?: number;
+  }): Promise<Project[]> {
+    const result = await this.projectModel.aggregate([
+      {
+        $match: {
+          'timeline.investment_end_at': { $lt: dayjs.utc().toDate() },
+          status: EProjectStatus.ACTIVE,
         },
-        status: EProjectStatus.ACTIVE,
-      })
-      .sort({ 'timeline.investment_end_at': 'desc' })
-      .limit(3);
+      },
+      {
+        $addFields: {
+          registration_start_at_diff: {
+            $cond: {
+              if: {
+                $gt: ['$timeline.registration_start_at', dayjs.utc().toDate()],
+              },
+              then: {
+                $subtract: [
+                  '$timeline.registration_start_at',
+                  dayjs.utc().toDate(),
+                ],
+              },
+              else: Number.MAX_SAFE_INTEGER,
+            },
+          },
+        },
+      },
+      {
+        $sort: { registration_start_at_diff: 1 },
+      },
+      {
+        $limit: Number(params?.limit) || 3,
+      },
+      {
+        $skip: Number(params?.skip) || 0,
+      },
+    ]);
 
     return result;
   }
