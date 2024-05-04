@@ -2,6 +2,7 @@ import { Project } from '@schemas/project.schema';
 import { ApiProperty } from '@nestjs/swagger';
 import { withBaseResponse } from '@/interfaces/common.interface';
 import { boolean } from 'joi';
+import { UsesProjectAssets } from '@/services/user-project/user-project.response';
 
 class ProjectRaffleInfo {
   @ApiProperty({
@@ -32,6 +33,11 @@ class ProjectDetailDto {
     type: boolean,
   })
   is_applied?: boolean;
+
+  @ApiProperty({
+    type: UsesProjectAssets,
+  })
+  users_assets?: UsesProjectAssets;
 }
 
 class ProjectDetailResponse extends withBaseResponse(ProjectDetailDto, {}) {}

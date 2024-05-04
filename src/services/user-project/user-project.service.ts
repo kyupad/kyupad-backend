@@ -64,12 +64,4 @@ export class UserProjectService {
     });
     return result;
   }
-
-  async isApplied(userId: string, projectId: string): Promise<boolean> {
-    const result = await this.userProjectModel.findOne({
-      user_id: userId,
-      project_id: projectId,
-    });
-    return !!result;
-  }
 }

@@ -36,11 +36,7 @@ import { JwtService } from '@nestjs/jwt';
 import { UserProjectService } from '@/services/user-project/user-project.service';
 import { plainToInstance } from 'class-transformer';
 import { Project } from '@schemas/project.schema';
-import {
-  ProjectDetailDto,
-  ProjectDetailResponse,
-  ProjectDto,
-} from '@usecases/project/project.response';
+import { ProjectDetailResponse } from '@usecases/project/project.response';
 
 @Controller()
 @ApiTags('project')
@@ -127,20 +123,11 @@ export class ProjectController {
       const userInfo = this.jwtService.decode(accessToken) as any;
       wallet = userInfo?.sub;
     }
-    const { project, is_applied } = await this.projectService.detail(
-      slug,
-      wallet,
-    );
+    const project = await this.projectService.detail(slug, wallet);
 
     return {
       statusCode: HttpStatus.OK,
-      data: {
-        project: plainToInstance(
-          ProjectDto,
-          JSON.parse(JSON.stringify(project)),
-        ),
-        is_applied,
-      },
+      data: project,
     };
   }
 

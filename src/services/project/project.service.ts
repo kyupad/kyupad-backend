@@ -1,5 +1,5 @@
 import { Project } from '@/schemas/project.schema';
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectConnection, InjectModel } from '@nestjs/mongoose';
 import mongoose, { Model } from 'mongoose';
 import dayjs from 'dayjs';
@@ -10,11 +10,15 @@ import {
   ProjectDetailDto,
   ProjectDto,
 } from '@usecases/project/project.response';
+import { plainToInstance } from 'class-transformer';
+import { UsesProjectAssets } from '@/services/user-project/user-project.response';
 
 dayjs.extend(utc);
 
 @Injectable()
 export class ProjectService {
+  private logger = new Logger(ProjectService.name);
+
   constructor(
     @InjectModel(Project.name) private readonly projectModel: Model<Project>,
     @InjectModel(UserProject.name)
@@ -155,16 +159,21 @@ export class ProjectService {
   async detail(
     projectSlug: string,
     wallet?: string,
-  ): Promise<{ project: ProjectDto; is_applied?: boolean }> {
-    let is_applied = false;
+  ): Promise<ProjectDetailDto> {
     const project = await this.projectModel.findOne({
       slug: projectSlug,
       status: EProjectStatus.ACTIVE,
     });
     if (!project) throw new NotFoundException('Project not found');
-    const projectDetail: ProjectDto = { ...project };
+    const projectDetail: ProjectDetailDto = {
+      project: plainToInstance(ProjectDto, JSON.parse(JSON.stringify(project))),
+    };
     if (wallet) {
-      const [myUserProject, totalTicketUserProject] = await Promise.all([
+      const [
+        myUserProject,
+        totalTicketUserProject,
+        aggregateUserRegisterProjectResult,
+      ] = await Promise.all([
         this.userProjectModel.findOne({
           project_id: String(project.id),
           user_id: wallet,
@@ -175,18 +184,62 @@ export class ProjectService {
             $gt: 0,
           },
         }),
+        this.aggregateUsersProjectAssets(String(project?.id)),
       ]);
-      if (myUserProject) is_applied = true;
-      projectDetail.raffle_info = {
+      if (myUserProject) projectDetail.is_applied = true;
+      projectDetail.project.raffle_info = {
         total_owner_winning_tickets: myUserProject
           ? myUserProject.total_ticket || 0
           : 0,
         total_winner: totalTicketUserProject | 0,
       };
+      if (aggregateUserRegisterProjectResult)
+        projectDetail.users_assets = aggregateUserRegisterProjectResult;
+    } else {
+      const aggregateUserRegisterProjectResult =
+        await this.aggregateUsersProjectAssets(String(project?.id));
+      if (aggregateUserRegisterProjectResult)
+        projectDetail.users_assets = aggregateUserRegisterProjectResult;
     }
-    return {
-      project,
-      is_applied,
-    };
+    return projectDetail;
+  }
+
+  async aggregateUsersProjectAssets(
+    projectId: string,
+  ): Promise<UsesProjectAssets | undefined> {
+    try {
+      let result: UsesProjectAssets = {
+        total_assets: 0,
+        participants: 0,
+      };
+      const aggregateResult =
+        await this.userProjectModel.aggregate<UsesProjectAssets>([
+          {
+            $match: {
+              project_id: projectId,
+            },
+          },
+          {
+            $group: {
+              _id: null,
+              total_assets: {
+                $sum: '$total_assets',
+              },
+              participants: {
+                $sum: 1,
+              },
+            },
+          },
+        ]);
+      if (aggregateResult && aggregateResult.length > 0) {
+        result = aggregateResult[0];
+        result.total_assets = Number((result.total_assets || 0).toFixed(2));
+      }
+      return result;
+    } catch (e) {
+      this.logger.error(
+        `Cannot aggregateUsersProjectAssets of project [${projectId}], ${e.stack}`,
+      );
+    }
   }
 }
