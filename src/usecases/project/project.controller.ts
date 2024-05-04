@@ -24,7 +24,6 @@ import {
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import {
-  DetailProjectResponse,
   ListProjectQuery,
   ListProjectResponse,
   ListProjectResult,
@@ -37,6 +36,11 @@ import { JwtService } from '@nestjs/jwt';
 import { UserProjectService } from '@/services/user-project/user-project.service';
 import { plainToInstance } from 'class-transformer';
 import { Project } from '@schemas/project.schema';
+import {
+  ProjectDetailDto,
+  ProjectDetailResponse,
+  ProjectDto,
+} from '@usecases/project/project.response';
 
 @Controller()
 @ApiTags('project')
@@ -113,46 +117,29 @@ export class ProjectController {
   @Get(':slug')
   @ApiOperation({ summary: 'Detail Project' })
   @ApiNotFoundResponse({ description: 'Project not found' })
-  @ApiOkResponse({ type: DetailProjectResponse })
+  @ApiOkResponse({ type: ProjectDetailResponse })
   @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
-  async detail(@Param('slug') slug: string): Promise<DetailProjectResponse> {
-    const result = await this.projectService.findBySlug(slug);
-
-    if (!result) {
-      throw new NotFoundException('Project not found');
-    }
-
+  async detail(@Param('slug') slug: string): Promise<ProjectDetailResponse> {
     const accessToken = this.cls.get('accessToken');
+    let wallet;
 
     if (accessToken) {
       const userInfo = this.jwtService.decode(accessToken) as any;
-
-      if (userInfo?.sub) {
-        const isApplied = await this.userProjectService.isApplied(
-          userInfo.sub,
-          result.id,
-        );
-
-        if (isApplied) {
-          return {
-            statusCode: 200,
-            data: {
-              project: plainToInstance(
-                Project,
-                JSON.parse(JSON.stringify(result)),
-              ),
-              is_applied: isApplied,
-            },
-          };
-        }
-      }
+      wallet = userInfo?.sub;
     }
+    const { project, is_applied } = await this.projectService.detail(
+      slug,
+      wallet,
+    );
 
     return {
       statusCode: HttpStatus.OK,
       data: {
-        project: plainToInstance(Project, JSON.parse(JSON.stringify(result))),
-        is_applied: false,
+        project: plainToInstance(
+          ProjectDto,
+          JSON.parse(JSON.stringify(project)),
+        ),
+        is_applied,
       },
     };
   }

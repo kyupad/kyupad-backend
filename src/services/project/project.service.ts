@@ -1,11 +1,15 @@
 import { Project } from '@/schemas/project.schema';
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectConnection, InjectModel } from '@nestjs/mongoose';
 import mongoose, { Model } from 'mongoose';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import { UserProject } from '@/schemas/user_project.schema';
 import { EProjectStatus } from '@/enums';
+import {
+  ProjectDetailDto,
+  ProjectDto,
+} from '@usecases/project/project.response';
 
 dayjs.extend(utc);
 
@@ -146,5 +150,43 @@ export class ProjectService {
       id,
     });
     return result;
+  }
+
+  async detail(
+    projectSlug: string,
+    wallet?: string,
+  ): Promise<{ project: ProjectDto; is_applied?: boolean }> {
+    let is_applied = false;
+    const project = await this.projectModel.findOne({
+      slug: projectSlug,
+      status: EProjectStatus.ACTIVE,
+    });
+    if (!project) throw new NotFoundException('Project not found');
+    const projectDetail: ProjectDto = { ...project };
+    if (wallet) {
+      const [myUserProject, totalTicketUserProject] = await Promise.all([
+        this.userProjectModel.findOne({
+          project_id: String(project.id),
+          user_id: wallet,
+        }),
+        this.userProjectModel.countDocuments({
+          project_id: String(project.id),
+          total_ticket: {
+            $gt: 0,
+          },
+        }),
+      ]);
+      if (myUserProject) is_applied = true;
+      projectDetail.raffle_info = {
+        total_owner_winning_tickets: myUserProject
+          ? myUserProject.total_ticket || 0
+          : 0,
+        total_winner: totalTicketUserProject | 0,
+      };
+    }
+    return {
+      project,
+      is_applied,
+    };
   }
 }

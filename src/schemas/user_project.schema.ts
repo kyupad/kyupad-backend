@@ -35,6 +35,9 @@ export class UserProject {
 
   @Prop({ type: Array, required: false })
   catnip_assets_holder?: CatnipAssetHolder[];
+
+  @Prop({ type: Number, required: false })
+  total_ticket?: number;
 }
 
 export const UserProjectSchema = SchemaFactory.createForClass(UserProject);
