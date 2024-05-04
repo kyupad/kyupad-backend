@@ -83,7 +83,7 @@ class TokenInfo {
   article?: string; // field
 }
 
-class Timeline {
+export class Timeline {
   @Prop({ required: true, type: mongoose.Schema.Types.Date })
   registration_start_at: Date; // field
 
@@ -107,6 +107,9 @@ class Timeline {
 
   @Prop({ required: true, type: mongoose.Schema.Types.Date })
   claim_start_at: Date; // field
+
+  @Prop({ required: true, type: mongoose.Schema.Types.Date })
+  claim_end_at: Date; // field
 }
 
 class Price {

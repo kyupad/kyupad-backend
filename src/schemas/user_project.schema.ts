@@ -38,6 +38,16 @@ export class UserProject {
 
   @Prop({ type: Number, required: false })
   total_ticket?: number;
+
+  @ApiProperty({ type: Number })
+  @Prop({
+    type: Number,
+    default: 1,
+  })
+  multi_pier?: number;
+
+  @Prop({ type: Number, required: false })
+  total_assets?: number;
 }
 
 export const UserProjectSchema = SchemaFactory.createForClass(UserProject);

@@ -18,4 +18,18 @@ enum EProjectStatus {
   DRAFT = 'draft',
 }
 
-export { EProjectType, EProjectSalePool, EProjectVestingType, EProjectStatus };
+enum EProjectProgressStatus {
+  REGISTRATION = 'registration',
+  SNAPSHOTTING = 'snapshotting',
+  INVESTING = 'investing',
+  VESTING = 'vesting',
+  FINISHED = 'finished',
+}
+
+export {
+  EProjectType,
+  EProjectSalePool,
+  EProjectVestingType,
+  EProjectStatus,
+  EProjectProgressStatus,
+};

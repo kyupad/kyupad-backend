@@ -36,7 +36,11 @@ import { JwtService } from '@nestjs/jwt';
 import { UserProjectService } from '@/services/user-project/user-project.service';
 import { plainToInstance } from 'class-transformer';
 import { Project } from '@schemas/project.schema';
-import { ProjectDetailResponse } from '@usecases/project/project.response';
+import {
+  ProjectDetailResponse,
+  UserProjectRegistrationResponse,
+} from '@usecases/project/project.response';
+import { UserRegistrationQuery } from '@usecases/project/project.input';
 
 @Controller()
 @ApiTags('project')
@@ -204,6 +208,32 @@ export class ProjectController {
     return {
       statusCode: HttpStatus.CREATED,
       data: [{ project_id }],
+    };
+  }
+
+  @Get(':slug/registration-detail')
+  @ApiOperation({ summary: 'Info of user registration' })
+  @ApiNotFoundResponse({ description: 'Registration info not found' })
+  @ApiOkResponse({ type: UserProjectRegistrationResponse })
+  @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
+  async userRegistrationInfo(
+    @Param('slug') slug: string,
+    @Query() query: UserRegistrationQuery,
+  ): Promise<UserProjectRegistrationResponse> {
+    const accessToken = this.cls.get('accessToken');
+    //FIXME: Mock
+    let wallet = query?.wallet;
+
+    if (accessToken) {
+      const userInfo = this.jwtService.decode(accessToken) as any;
+      wallet = userInfo?.sub;
+    }
+    const projectRegistrationInfo =
+      await this.userProjectService.projectRegistrationInfo(slug, wallet);
+
+    return {
+      statusCode: HttpStatus.OK,
+      data: projectRegistrationInfo,
     };
   }
 }

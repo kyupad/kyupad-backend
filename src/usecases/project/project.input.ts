@@ -1,4 +1,5 @@
 import { ETokenType } from '@/enums';
+import { ApiProperty } from '@nestjs/swagger';
 
 class CatnipAssetHolder {
   type: ETokenType;
@@ -17,4 +18,9 @@ class CatnipAssetHolder {
   ];
 }
 
-export { CatnipAssetHolder };
+class UserRegistrationQuery {
+  @ApiProperty({ type: String })
+  wallet?: string;
+}
+
+export { CatnipAssetHolder, UserRegistrationQuery };

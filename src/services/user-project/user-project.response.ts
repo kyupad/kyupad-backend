@@ -10,5 +10,14 @@ class UsesProjectAssets {
     type: Number,
   })
   participants: number;
+
+  @ApiProperty({
+    type: Number,
+    required: false,
+  })
+  chance_of_winning?: number;
+
+  _id?: any;
 }
+
 export { UsesProjectAssets };

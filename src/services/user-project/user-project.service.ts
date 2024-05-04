@@ -6,6 +6,9 @@ import { AwsSQSService } from '@/services/aws/sqs/sqs.service';
 import { ProjectService } from '@/services/project/project.service';
 import { ICatnipAssetsSnapshotBody } from '@/services/project/project.input';
 import { SeasonService } from '@/services/season/season.service';
+import { EProjectProgressStatus, EProjectStatus } from '@/enums';
+import { UserProjectRegistrationDto } from '@usecases/project/project.response';
+import { Project } from '@schemas/project.schema';
 
 @Injectable()
 export class UserProjectService {
@@ -63,5 +66,82 @@ export class UserProjectService {
       project_id: projectId,
     });
     return result;
+  }
+
+  async projectRegistrationInfo(
+    projectSlug: string,
+    wallet?: string,
+  ): Promise<UserProjectRegistrationDto> {
+    if (!wallet) throw new NotFoundException('Registration info not found');
+    const project = await this.projectService.findProjectBySlug(
+      projectSlug,
+      {
+        status: EProjectStatus.ACTIVE,
+      },
+      { timeline: 1, id: 1, info: 1 },
+    );
+    const projectInfo = JSON.parse(JSON.stringify(project)) as Project;
+    const result: UserProjectRegistrationDto = {
+      progress_status: this.projectService.getProjectProgressStatus(
+        projectInfo.timeline,
+      ),
+      project_info: {
+        ...projectInfo,
+        id: String(project.id),
+        info: undefined,
+      },
+    };
+    await this.projectRegistrationInfoByProgressStatus(
+      result,
+      projectInfo,
+      wallet,
+    );
+    return result;
+  }
+
+  async projectRegistrationInfoByProgressStatus(
+    info: UserProjectRegistrationDto,
+    projectInfo: Project,
+    wallet: string,
+  ): Promise<void> {
+    if (info.progress_status === EProjectProgressStatus.REGISTRATION) {
+      const userProject = await this.userProjectModel.findOne({
+        project_id: info.project_info.id,
+        user_id: wallet,
+      });
+      if (!userProject)
+        throw new NotFoundException('Registration info not found');
+      info.catnip_info = {
+        catnip_point: userProject.total_assets || 0,
+        multi_pier: userProject.multi_pier || 1,
+      };
+    }
+    if (info.progress_status === EProjectProgressStatus.SNAPSHOTTING) {
+      const aggregateUsersProjectAssetsInfo =
+        await this.projectService.aggregateUsersProjectAssets(
+          String(info.project_info.id),
+        );
+      if (aggregateUsersProjectAssetsInfo)
+        delete aggregateUsersProjectAssetsInfo._id;
+      info.users_assets = aggregateUsersProjectAssetsInfo || {
+        total_assets: 0,
+        participants: 0,
+      };
+    }
+    if (info.progress_status === EProjectProgressStatus.INVESTING) {
+      const { total_winner, total_owner_winning_tickets } =
+        await this.projectService.aggregateUsersProjectTicket(
+          info.project_info.id || '',
+          wallet,
+        );
+      info.investment_info = {
+        currency: 'USDT', //FIXME: ko fic cung
+        ticket_size: projectInfo.info?.ticket_size,
+        token_offered: projectInfo.info?.token_offered,
+        total_winner,
+        total_owner_winning_tickets,
+        tickets_used: 0, //FIXME: ko fic cung
+      };
+    }
   }
 }

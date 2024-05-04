@@ -1,15 +1,12 @@
-import { Project } from '@/schemas/project.schema';
+import { Project, Timeline } from '@/schemas/project.schema';
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectConnection, InjectModel } from '@nestjs/mongoose';
-import mongoose, { Model } from 'mongoose';
+import mongoose, { FilterQuery, Model } from 'mongoose';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import { UserProject } from '@/schemas/user_project.schema';
-import { EProjectStatus } from '@/enums';
-import {
-  ProjectDetailDto,
-  ProjectDto,
-} from '@usecases/project/project.response';
+import { EProjectProgressStatus, EProjectStatus } from '@/enums';
+import { ProjectDetailDto } from '@usecases/project/project.response';
 import { plainToInstance } from 'class-transformer';
 import { UsesProjectAssets } from '@/services/user-project/user-project.response';
 
@@ -33,15 +30,6 @@ export class ProjectService {
 
   async update(id: string, data: Project): Promise<Project | null> {
     const result = await this.projectModel.findByIdAndUpdate(id, data);
-    return result;
-  }
-
-  async delete(ids: string[]): Promise<void> {
-    await this.projectModel.deleteMany({ _id: { $in: ids } });
-  }
-
-  async findAll(): Promise<Project[]> {
-    const result = await this.projectModel.find().sort({ createdAt: 'desc' });
     return result;
   }
 
@@ -131,22 +119,9 @@ export class ProjectService {
     return result;
   }
 
-  async findBySlug(slug: string): Promise<Project | null> {
-    const result = await this.projectModel.findOne({ slug });
-    return result;
-  }
-
   async isExist(id: string): Promise<boolean> {
     const result = await this.projectModel.exists({ id: id });
     return !!result?._id;
-  }
-
-  async findUserProject(
-    project_id: string,
-    user_id: string,
-  ): Promise<UserProject | null> {
-    const result = await this.userProjectModel.findOne({ user_id, project_id });
-    return result;
   }
 
   async findProjectById(id: string): Promise<Project | null> {
@@ -154,6 +129,21 @@ export class ProjectService {
       id,
     });
     return result;
+  }
+
+  async findProjectBySlug(
+    slug: string,
+    filter?: FilterQuery<Project>,
+    select?: { [key in keyof FilterQuery<Project>]: 1 | 0 },
+  ): Promise<Project> {
+    const project = await this.projectModel
+      .findOne({
+        ...filter,
+        slug,
+      })
+      .select(select || {});
+    if (!project) throw new NotFoundException('Project not found');
+    return project;
   }
 
   async detail(
@@ -165,41 +155,30 @@ export class ProjectService {
       status: EProjectStatus.ACTIVE,
     });
     if (!project) throw new NotFoundException('Project not found');
+    const projectInfo = JSON.parse(JSON.stringify(project)) as Project;
     const projectDetail: ProjectDetailDto = {
-      project: plainToInstance(ProjectDto, JSON.parse(JSON.stringify(project))),
+      project: plainToInstance(Project, JSON.parse(JSON.stringify(project))),
+      progress_status: this.getProjectProgressStatus(projectInfo.timeline),
     };
     if (wallet) {
-      const [
-        myUserProject,
-        totalTicketUserProject,
-        aggregateUserRegisterProjectResult,
-      ] = await Promise.all([
-        this.userProjectModel.findOne({
-          project_id: String(project.id),
-          user_id: wallet,
-        }),
-        this.userProjectModel.countDocuments({
-          project_id: String(project.id),
-          total_ticket: {
-            $gt: 0,
-          },
-        }),
-        this.aggregateUsersProjectAssets(String(project?.id)),
-      ]);
+      const [myUserProject, aggregateUserRegisterProjectResult] =
+        await Promise.all([
+          this.userProjectModel.findOne({
+            project_id: String(project.id),
+            user_id: wallet,
+          }),
+          this.aggregateUsersProjectAssets(String(project?.id)),
+        ]);
       if (myUserProject) projectDetail.is_applied = true;
-      projectDetail.project.raffle_info = {
-        total_owner_winning_tickets: myUserProject
-          ? myUserProject.total_ticket || 0
-          : 0,
-        total_winner: totalTicketUserProject | 0,
-      };
       if (aggregateUserRegisterProjectResult)
         projectDetail.users_assets = aggregateUserRegisterProjectResult;
     } else {
       const aggregateUserRegisterProjectResult =
         await this.aggregateUsersProjectAssets(String(project?.id));
-      if (aggregateUserRegisterProjectResult)
+      if (aggregateUserRegisterProjectResult) {
+        delete aggregateUserRegisterProjectResult._id;
         projectDetail.users_assets = aggregateUserRegisterProjectResult;
+      }
     }
     return projectDetail;
   }
@@ -241,5 +220,48 @@ export class ProjectService {
         `Cannot aggregateUsersProjectAssets of project [${projectId}], ${e.stack}`,
       );
     }
+  }
+
+  async aggregateUsersProjectTicket(
+    projectId: string,
+    wallet: string,
+  ): Promise<{
+    total_owner_winning_tickets: number;
+    total_winner: number;
+  }> {
+    const [myUserProject, totalTicketUserProject] = await Promise.all([
+      this.userProjectModel.findOne({
+        project_id: projectId,
+        user_id: wallet,
+      }),
+      this.userProjectModel.countDocuments({
+        project_id: projectId,
+        total_ticket: {
+          $gt: 0,
+        },
+      }),
+    ]);
+    if (!myUserProject) throw new NotFoundException('User project not found');
+    return {
+      total_owner_winning_tickets: myUserProject
+        ? myUserProject.total_ticket || 0
+        : 0,
+      total_winner: totalTicketUserProject | 0,
+    };
+  }
+
+  getProjectProgressStatus(projectTimeLine: Timeline): EProjectProgressStatus {
+    let progressStatus = EProjectProgressStatus.REGISTRATION;
+    const currentTime = new Date().getTime();
+    if (new Date(projectTimeLine?.snapshot_start_at).getTime() <= currentTime)
+      progressStatus = EProjectProgressStatus.SNAPSHOTTING;
+    if (new Date(projectTimeLine?.investment_start_at).getTime() <= currentTime)
+      progressStatus = EProjectProgressStatus.INVESTING;
+    if (new Date(projectTimeLine?.claim_start_at).getTime() <= currentTime)
+      progressStatus = EProjectProgressStatus.VESTING;
+    if (new Date(projectTimeLine?.claim_end_at).getTime() <= currentTime)
+      progressStatus = EProjectProgressStatus.FINISHED;
+
+    return progressStatus;
   }
 }
