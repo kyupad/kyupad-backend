@@ -1,4 +1,7 @@
-import { withBaseResponse } from '@/interfaces/common.interface';
+import {
+  PaginationResponse,
+  withBaseResponse,
+} from '@/interfaces/common.interface';
 import { Project } from '@/schemas/project.schema';
 import { ApiProperty, OmitType } from '@nestjs/swagger';
 import dayjs from 'dayjs';
@@ -113,15 +116,22 @@ export class ListProjectResult extends OmitType(Project, [
   token_info: TokenInfo;
 }
 
+class ListProjectResultWithPagination {
+  @ApiProperty({ isArray: true, type: ListProjectResult })
+  projects: ListProjectResult[];
+  @ApiProperty()
+  pagination: PaginationResponse;
+}
+
 class ListProjectQuery {
   type: EProjectType;
   limit?: number;
-  skip?: number;
+  page?: number;
 }
 
-class ListProjectResponse extends withBaseResponse(ListProjectResult, {
-  isArray: true,
-}) {}
+class ListProjectResponse extends withBaseResponse(
+  ListProjectResultWithPagination,
+) {}
 
 class ProjectResult extends OmitType(Project, ['_id', 'assets']) {}
 

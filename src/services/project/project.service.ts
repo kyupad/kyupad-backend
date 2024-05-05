@@ -35,8 +35,11 @@ export class ProjectService {
 
   async listUpcoming(params: {
     limit?: number;
-    skip?: number;
-  }): Promise<Project[]> {
+    page?: number;
+  }): Promise<{ data: Project[]; totalCount: number }> {
+    const perPage = Number(params?.limit) || 4;
+    const page = params?.page || 1;
+
     const result = await this.projectModel.aggregate([
       {
         $match: {
@@ -63,23 +66,36 @@ export class ProjectService {
         },
       },
       {
-        $sort: { registration_start_at_diff: 1 },
+        $facet: {
+          totalCount: [{ $count: 'count' }],
+          data: [
+            { $sort: { registration_start_at_diff: 1 } },
+            { $skip: perPage * page - perPage },
+            { $limit: perPage },
+          ],
+        },
       },
       {
-        $limit: Number(params?.limit) || 4,
+        $unwind: '$totalCount',
       },
       {
-        $skip: Number(params?.skip) || 0,
+        $project: {
+          totalCount: '$totalCount.count',
+          data: 1,
+        },
       },
     ]);
 
-    return result;
+    return result?.[0] || [];
   }
 
   async listSuccess(params: {
     limit?: number;
-    skip?: number;
-  }): Promise<Project[]> {
+    page?: number;
+  }): Promise<{ data: Project[]; totalCount: number }> {
+    const perPage = Number(params?.limit) || 3;
+    const page = params?.page || 1;
+
     const result = await this.projectModel.aggregate([
       {
         $match: {
@@ -106,17 +122,27 @@ export class ProjectService {
         },
       },
       {
-        $sort: { registration_start_at_diff: 1 },
+        $facet: {
+          totalCount: [{ $count: 'count' }],
+          data: [
+            { $sort: { registration_start_at_diff: 1 } },
+            { $skip: perPage * page - perPage },
+            { $limit: perPage },
+          ],
+        },
       },
       {
-        $limit: Number(params?.limit) || 3,
+        $unwind: '$totalCount',
       },
       {
-        $skip: Number(params?.skip) || 0,
+        $project: {
+          totalCount: '$totalCount.count',
+          data: 1,
+        },
       },
     ]);
 
-    return result;
+    return result?.[0] || [];
   }
 
   async isExist(id: string): Promise<boolean> {

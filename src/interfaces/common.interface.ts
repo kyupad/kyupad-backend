@@ -38,6 +38,13 @@ class DefaultResponseDto {
   status: 'SUCCESS';
 }
 
+class PaginationResponse {
+  @ApiProperty()
+  total: number;
+  @ApiProperty()
+  page: number;
+}
+
 class DefaultResponse extends withBaseResponse(DefaultResponseDto, {}) {}
 
-export { DefaultResponse };
+export { DefaultResponse, PaginationResponse };

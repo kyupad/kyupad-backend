@@ -61,7 +61,7 @@ export class ProjectController {
   @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
   @ApiQuery({ enum: EProjectType, name: 'type', required: true })
   @ApiQuery({ name: 'limit', required: false, type: Number })
-  @ApiQuery({ name: 'skip', required: false, type: Number })
+  @ApiQuery({ name: 'page', required: false, type: Number })
   async list(@Query() query: ListProjectQuery): Promise<ListProjectResponse> {
     if (!query?.type) {
       throw new BadRequestException('type is required');
@@ -77,26 +77,32 @@ export class ProjectController {
     if (query?.type === EProjectType.success) {
       const success = await this.projectService.listSuccess({
         limit: query?.limit,
-        skip: query?.skip,
+        page: query?.page,
       });
-      const r = [...JSON.parse(JSON.stringify(success))];
+      const r = [...JSON.parse(JSON.stringify(success.data))];
       const result = plainToInstance(
         Project,
         r,
       ) as unknown as ListProjectResult[];
       return {
         statusCode: 200,
-        data: result,
+        data: {
+          projects: result,
+          pagination: {
+            total: Math.ceil(success.totalCount / (query?.limit || 3)),
+            page: Number(query?.page) || 1,
+          },
+        },
       };
     }
 
     if (query?.type === EProjectType.upcoming) {
       const upcoming = await this.projectService.listUpcoming({
         limit: query?.limit,
-        skip: query?.skip,
+        page: query?.page,
       });
 
-      const r = [...JSON.parse(JSON.stringify(upcoming))];
+      const r = [...JSON.parse(JSON.stringify(upcoming.data))];
 
       const result = plainToInstance(
         Project,
@@ -104,7 +110,13 @@ export class ProjectController {
       ) as unknown as ListProjectResult[];
       return {
         statusCode: 200,
-        data: result,
+        data: {
+          projects: result,
+          pagination: {
+            total: Math.ceil(upcoming.totalCount / (query?.limit || 4)),
+            page: Number(query?.page) || 1,
+          },
+        },
       };
     }
 
