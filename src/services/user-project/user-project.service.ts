@@ -1,12 +1,21 @@
 import { UserProject } from '@/schemas/user_project.schema';
-import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Inject,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectConnection, InjectModel } from '@nestjs/mongoose';
 import mongoose, { Model } from 'mongoose';
 import { AwsSQSService } from '@/services/aws/sqs/sqs.service';
 import { ProjectService } from '@/services/project/project.service';
 import { ICatnipAssetsSnapshotBody } from '@/services/project/project.input';
 import { SeasonService } from '@/services/season/season.service';
-import { EProjectProgressStatus, EProjectStatus } from '@/enums';
+import {
+  EProjectProgressStatus,
+  EProjectStatus,
+  ESnapshotStatus,
+} from '@/enums';
 import { UserProjectRegistrationDto } from '@usecases/project/project.response';
 import { Project } from '@schemas/project.schema';
 
@@ -25,6 +34,7 @@ export class UserProjectService {
   ) {}
 
   async create(input: UserProject): Promise<UserProject> {
+    const currentTime = new Date().getTime();
     const [project, userProject, season] = await Promise.all([
       this.projectService.findProjectById(input.project_id),
       this.userProjectModel.findOne({
@@ -33,9 +43,15 @@ export class UserProjectService {
       }),
       this.seasonService.activeSeason(),
     ]);
-    if (!project) {
+    if (!project || project.status !== EProjectStatus.ACTIVE) {
       throw new NotFoundException('Project not found');
     }
+    if (
+      new Date(project.timeline.registration_start_at).getTime() >
+        currentTime ||
+      new Date(project.timeline.registration_end_at).getTime() < currentTime
+    )
+      throw new BadRequestException('Registration time invalid');
     if (userProject) throw new NotFoundException('You have joined the project');
     const session = await this.connection.startSession();
     const resultTrans = await session.withTransaction(async () => {
@@ -78,7 +94,7 @@ export class UserProjectService {
       {
         status: EProjectStatus.ACTIVE,
       },
-      { timeline: 1, id: 1, info: 1 },
+      { timeline: 1, id: 1, info: 1, status: 1 },
     );
     const projectInfo = JSON.parse(JSON.stringify(project)) as Project;
     const result: UserProjectRegistrationDto = {
@@ -112,8 +128,13 @@ export class UserProjectService {
       if (!userProject)
         throw new NotFoundException('Registration info not found');
       info.catnip_info = {
-        catnip_point: userProject.total_assets || 0,
+        catnip_point: Number(
+          ((userProject.total_assets || 0) * 0.1).toFixed(2),
+        ),
         multi_pier: userProject.multi_pier || 1,
+        total_assets: Number((userProject.total_assets || 0).toFixed(2)),
+        is_snapshoting:
+          userProject.snapshot_status !== ESnapshotStatus.SUCCESSFUL,
       };
     }
     if (info.progress_status === EProjectProgressStatus.SNAPSHOTTING) {

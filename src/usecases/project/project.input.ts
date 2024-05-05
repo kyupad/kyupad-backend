@@ -19,7 +19,7 @@ class CatnipAssetHolder {
 }
 
 class UserRegistrationQuery {
-  @ApiProperty({ type: String })
+  @ApiProperty({ type: String, required: false })
   wallet?: string;
 }
 

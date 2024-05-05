@@ -19,6 +19,7 @@ enum EProjectStatus {
 }
 
 enum EProjectProgressStatus {
+  UP_COMING = 'up_coming',
   REGISTRATION = 'registration',
   SNAPSHOTTING = 'snapshotting',
   INVESTING = 'investing',

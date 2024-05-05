@@ -70,6 +70,16 @@ class UserProjectCatnipInfo {
     type: Number,
   })
   multi_pier?: number;
+
+  @ApiProperty({
+    type: Number,
+  })
+  total_assets: number;
+
+  @ApiProperty({
+    type: Boolean,
+  })
+  is_snapshoting?: boolean;
 }
 
 class UserProjectRegistrationDto {

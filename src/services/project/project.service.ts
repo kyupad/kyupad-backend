@@ -277,8 +277,12 @@ export class ProjectService {
   }
 
   getProjectProgressStatus(projectTimeLine: Timeline): EProjectProgressStatus {
-    let progressStatus = EProjectProgressStatus.REGISTRATION;
+    let progressStatus = EProjectProgressStatus.UP_COMING;
     const currentTime = new Date().getTime();
+    if (
+      new Date(projectTimeLine?.registration_start_at).getTime() <= currentTime
+    )
+      progressStatus = EProjectProgressStatus.REGISTRATION;
     if (new Date(projectTimeLine?.snapshot_start_at).getTime() <= currentTime)
       progressStatus = EProjectProgressStatus.SNAPSHOTTING;
     if (new Date(projectTimeLine?.investment_start_at).getTime() <= currentTime)
