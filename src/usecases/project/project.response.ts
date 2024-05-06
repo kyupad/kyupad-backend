@@ -101,7 +101,7 @@ class UserProjectRegistrationDto {
 
   @ApiProperty({
     required: false,
-    type: UserProjectCatnipInfo,
+    type: UserProjectInvestmentInfo,
   })
   investment_info?: UserProjectInvestmentInfo;
 
