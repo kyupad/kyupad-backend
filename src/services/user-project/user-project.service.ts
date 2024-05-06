@@ -129,10 +129,10 @@ export class UserProjectService {
         throw new NotFoundException('Registration info not found');
       info.catnip_info = {
         catnip_point: Number(
-          ((userProject.total_assets || 0) * 0.1).toFixed(2),
+          ((userProject.total_assets || 0) * 0.1).toFixed(4),
         ),
         multi_pier: userProject.multi_pier || 1,
-        total_assets: Number((userProject.total_assets || 0).toFixed(2)),
+        total_assets: Number((userProject.total_assets || 0).toFixed(3)),
         is_snapshoting:
           userProject.snapshot_status !== ESnapshotStatus.SUCCESSFUL,
       };

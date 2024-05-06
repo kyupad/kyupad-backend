@@ -238,7 +238,7 @@ export class ProjectService {
         ]);
       if (aggregateResult && aggregateResult.length > 0) {
         result = aggregateResult[0];
-        result.total_assets = Number((result.total_assets || 0).toFixed(2));
+        result.total_assets = Number((result.total_assets || 0).toFixed(3));
       }
       return result;
     } catch (e) {
