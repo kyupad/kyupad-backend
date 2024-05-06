@@ -79,7 +79,8 @@ export class ProjectController {
         limit: query?.limit,
         page: query?.page,
       });
-      const r = [...JSON.parse(JSON.stringify(success.data))];
+
+      const r = [...JSON.parse(JSON.stringify(success?.data || []))];
       const result = plainToInstance(
         Project,
         r,
@@ -102,7 +103,7 @@ export class ProjectController {
         page: query?.page,
       });
 
-      const r = [...JSON.parse(JSON.stringify(upcoming.data))];
+      const r = [...JSON.parse(JSON.stringify(upcoming?.data || []))];
 
       const result = plainToInstance(
         Project,
