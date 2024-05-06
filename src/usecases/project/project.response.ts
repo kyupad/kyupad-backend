@@ -3,6 +3,7 @@ import { ApiProperty } from '@nestjs/swagger';
 import { withBaseResponse } from '@/interfaces/common.interface';
 import { UsesProjectAssets } from '@/services/user-project/user-project.response';
 import { EProjectProgressStatus } from '@/enums';
+import { Transform } from 'class-transformer';
 
 class UserProjectInvestmentInfo {
   @ApiProperty({
@@ -60,6 +61,37 @@ class ProjectDetailDto {
 
 class ProjectDetailResponse extends withBaseResponse(ProjectDetailDto, {}) {}
 
+class AssetCatnipInfo {
+  @ApiProperty({
+    type: String,
+  })
+  name: string;
+
+  @ApiProperty({
+    type: String,
+  })
+  symbol: string;
+
+  @ApiProperty({
+    type: Number,
+  })
+  price_per_token?: number;
+
+  @ApiProperty({
+    type: Number,
+  })
+  multi_pier?: number;
+
+  @ApiProperty({
+    type: String,
+  })
+  @Transform(({ value }) => {
+    if (value)
+      return value.replace('s3://', `${process.env.AWS_S3_BUCKET_URL}/`);
+  })
+  icon: string;
+}
+
 class UserProjectCatnipInfo {
   @ApiProperty({
     type: Number,
@@ -80,6 +112,12 @@ class UserProjectCatnipInfo {
     type: Boolean,
   })
   is_snapshoting?: boolean;
+
+  @ApiProperty({
+    type: AssetCatnipInfo,
+    isArray: true,
+  })
+  assets_catnip_info?: AssetCatnipInfo[];
 }
 
 class UserProjectRegistrationDto {
@@ -122,4 +160,5 @@ export {
   ProjectDetailDto,
   UserProjectRegistrationDto,
   UserProjectRegistrationResponse,
+  AssetCatnipInfo,
 };

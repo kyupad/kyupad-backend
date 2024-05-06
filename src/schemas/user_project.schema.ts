@@ -3,8 +3,31 @@ import { ApiProperty } from '@nestjs/swagger';
 import mongoose, { HydratedDocument } from 'mongoose';
 import { ESnapshotStatus } from '@/enums';
 import { CatnipAssetHolder } from '@usecases/project/project.input';
+import { NftCollection } from '@schemas/nft_collections.schema';
 
 export type UserDocument = HydratedDocument<UserProject>;
+
+class TokenInfo {
+  address: string;
+
+  name: string;
+
+  symbol: string;
+
+  owner: string;
+
+  balance: number;
+
+  price_per_token?: number;
+
+  total_price?: number;
+
+  currency: string;
+
+  multi_pier?: number;
+
+  icon?: string;
+}
 
 @Schema({ timestamps: true })
 export class UserProject {
@@ -48,6 +71,12 @@ export class UserProject {
 
   @Prop({ type: Number, required: false })
   total_assets?: number;
+
+  @Prop({ type: Array, required: false })
+  tokens_with_price?: TokenInfo[];
+
+  @Prop({ type: Array, required: false })
+  nfts_with_price?: NftCollection[];
 }
 
 export const UserProjectSchema = SchemaFactory.createForClass(UserProject);

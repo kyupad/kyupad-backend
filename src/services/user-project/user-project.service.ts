@@ -16,7 +16,10 @@ import {
   EProjectStatus,
   ESnapshotStatus,
 } from '@/enums';
-import { UserProjectRegistrationDto } from '@usecases/project/project.response';
+import {
+  AssetCatnipInfo,
+  UserProjectRegistrationDto,
+} from '@usecases/project/project.response';
 import { Project } from '@schemas/project.schema';
 
 @Injectable()
@@ -127,6 +130,37 @@ export class UserProjectService {
       });
       if (!userProject)
         throw new NotFoundException('Registration info not found');
+      const assetCatnipInfo: AssetCatnipInfo[] = [];
+      try {
+        userProject.tokens_with_price?.forEach((tk) => {
+          assetCatnipInfo.push({
+            name: tk.name,
+            symbol: tk.symbol,
+            icon:
+              tk.icon ||
+              's3://public/icons/nfts/default_token.png'.replace(
+                's3://',
+                `${process.env.AWS_S3_BUCKET_URL}/`,
+              ),
+            price_per_token: tk.price_per_token,
+            multi_pier: tk.multi_pier,
+          });
+        });
+        userProject.nfts_with_price?.forEach((tk) => {
+          assetCatnipInfo.push({
+            name: tk.name,
+            symbol: tk.symbol,
+            icon:
+              tk.icon ||
+              's3://public/icons/nfts/default_token.png'.replace(
+                's3://',
+                `${process.env.AWS_S3_BUCKET_URL}/`,
+              ),
+            price_per_token: tk.price_per_token,
+            multi_pier: tk.multi_pier,
+          });
+        });
+      } catch (e) {}
       info.catnip_info = {
         catnip_point: Number(
           ((userProject.total_assets || 0) * 0.1).toFixed(4),
@@ -135,6 +169,7 @@ export class UserProjectService {
         total_assets: Number((userProject.total_assets || 0).toFixed(3)),
         is_snapshoting:
           userProject.snapshot_status !== ESnapshotStatus.SUCCESSFUL,
+        assets_catnip_info: assetCatnipInfo,
       };
     }
     if (info.progress_status === EProjectProgressStatus.SNAPSHOTTING) {
