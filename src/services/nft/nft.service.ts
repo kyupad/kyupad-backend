@@ -29,6 +29,7 @@ import { AppsyncService } from '@/services/aws/appsync/appsync.service';
 import { AppsyncNftActionInput } from '@/services/nft/nft.input';
 import { NFT_ACTION_SCHEMA } from '@/services/nft/Nft.appsyncschema';
 import { EUserAction } from '@/enums';
+import { NftCollection } from '@schemas/nft_collections.schema';
 
 interface IGlobalCacheHolder {
   last_update_time?: number;
@@ -46,6 +47,8 @@ export class NftService {
     private readonly nftWhiteListModel: Model<NftWhiteList>,
     @InjectModel(KyupadNft.name)
     private readonly kyupadNftModel: Model<KyupadNft>,
+    @InjectModel(NftCollection.name)
+    private readonly nftCollection: Model<NftCollection>,
     @Inject(SeasonService)
     private readonly seasonService: SeasonService,
     @Inject(HeliusService)
@@ -542,5 +545,16 @@ export class NftService {
         passError: true,
       },
     );
+  }
+
+  async getCollectionByListAddress(
+    addresses: string[],
+  ): Promise<NftCollection[]> {
+    const collections = await this.nftCollection.find({
+      address: {
+        $in: addresses,
+      },
+    });
+    return JSON.parse(JSON.stringify(collections || []));
   }
 }

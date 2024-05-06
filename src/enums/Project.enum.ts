@@ -27,10 +27,17 @@ enum EProjectProgressStatus {
   FINISHED = 'finished',
 }
 
+enum EProjectUserAssetType {
+  FUNGIBLE = 'fungible',
+  STABLE_COIN = 'stable_coin',
+  NFT = 'nft',
+}
+
 export {
   EProjectType,
   EProjectSalePool,
   EProjectVestingType,
   EProjectStatus,
   EProjectProgressStatus,
+  EProjectUserAssetType,
 };

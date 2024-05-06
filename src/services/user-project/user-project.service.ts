@@ -14,13 +14,16 @@ import { SeasonService } from '@/services/season/season.service';
 import {
   EProjectProgressStatus,
   EProjectStatus,
+  EProjectUserAssetType,
   ESnapshotStatus,
 } from '@/enums';
 import {
   AssetCatnipInfo,
+  AssetCatnipInfoChild,
   UserProjectRegistrationDto,
 } from '@usecases/project/project.response';
 import { Project } from '@schemas/project.schema';
+import { NftService } from '@/services/nft/nft.service';
 
 @Injectable()
 export class UserProjectService {
@@ -34,6 +37,8 @@ export class UserProjectService {
     @InjectConnection() private readonly connection: mongoose.Connection,
     @Inject(SeasonService)
     private readonly seasonService: SeasonService,
+    @Inject(NftService)
+    private readonly nftService: NftService,
   ) {}
 
   async create(input: UserProject): Promise<UserProject> {
@@ -132,33 +137,59 @@ export class UserProjectService {
         throw new NotFoundException('Registration info not found');
       const assetCatnipInfo: AssetCatnipInfo[] = [];
       try {
-        userProject.tokens_with_price?.forEach((tk) => {
-          assetCatnipInfo.push({
-            name: tk.name,
-            symbol: tk.symbol,
-            icon:
-              tk.icon ||
-              's3://public/icons/nfts/default_token.png'.replace(
-                's3://',
-                `${process.env.AWS_S3_BUCKET_URL}/`,
-              ),
-            price_per_token: tk.price_per_token,
-            multi_pier: tk.multi_pier,
-          });
+        const stableCoins = (userProject.tokens_with_price || []).filter(
+          (tk) => tk.asset_type === EProjectUserAssetType.STABLE_COIN,
+        );
+        const fungibles = (userProject.tokens_with_price || []).filter(
+          (tk) => tk.asset_type === EProjectUserAssetType.FUNGIBLE,
+        );
+        const nfts = (userProject.nfts_with_price || []).filter(
+          (tk) => tk.asset_type === EProjectUserAssetType.NFT,
+        );
+        const collectionsAddress = (nfts || []).map(
+          (nft) => nft.collection_address,
+        );
+        const collections =
+          await this.nftService.getCollectionByListAddress(collectionsAddress);
+        const nftAssets: AssetCatnipInfoChild[] = [];
+        nfts.forEach((nft) => {
+          const matchCollection = collections.find(
+            (col) => col.address === nft.collection_address,
+          );
+          if (matchCollection) {
+            nftAssets.push({
+              name: matchCollection.name,
+              symbol: matchCollection.symbol,
+              icon: matchCollection.icon,
+              multi_pier: nft.multi_pier,
+            });
+          }
         });
-        userProject.nfts_with_price?.forEach((tk) => {
-          assetCatnipInfo.push({
-            name: tk.name,
-            symbol: tk.symbol,
-            icon:
-              tk.icon ||
-              's3://public/icons/nfts/default_token.png'.replace(
-                's3://',
-                `${process.env.AWS_S3_BUCKET_URL}/`,
-              ),
-            price_per_token: tk.price_per_token,
-            multi_pier: tk.multi_pier,
-          });
+        assetCatnipInfo.push({
+          asset_type: EProjectUserAssetType.NFT,
+          assets: nftAssets,
+        });
+        assetCatnipInfo.push({
+          asset_type: EProjectUserAssetType.STABLE_COIN,
+          assets: stableCoins.map((info) => {
+            return {
+              name: info.name,
+              symbol: info.symbol,
+              icon: info.icon,
+              multi_pier: info.multi_pier,
+            };
+          }),
+        });
+        assetCatnipInfo.push({
+          asset_type: EProjectUserAssetType.FUNGIBLE,
+          assets: fungibles.map((info) => {
+            return {
+              name: info.name,
+              symbol: info.symbol,
+              icon: info.icon,
+              multi_pier: info.multi_pier,
+            };
+          }),
         });
       } catch (e) {}
       info.catnip_info = {

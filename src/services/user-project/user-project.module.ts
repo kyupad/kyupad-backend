@@ -5,6 +5,7 @@ import { UserProject } from '@/schemas/user_project.schema';
 import { ProjectServiceModule } from '@/services/project/project.module';
 import { AwsSQSServiceModule } from '@/services/aws/sqs/sqs.module';
 import { SeasonServiceModule } from '@/services/season/season.module';
+import { NftServiceModule } from '@/services/nft/nft.module';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { SeasonServiceModule } from '@/services/season/season.module';
     ProjectServiceModule,
     AwsSQSServiceModule,
     SeasonServiceModule,
+    NftServiceModule,
   ],
   providers: [UserProjectService],
   exports: [UserProjectService],
