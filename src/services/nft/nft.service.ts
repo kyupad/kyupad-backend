@@ -15,7 +15,7 @@ import mongoose, {
 } from 'mongoose';
 import { plainToInstance } from 'class-transformer';
 import { MintingPoolRoundDto, PoolDto } from '@usecases/nft/nft.response';
-import { encrypt, getMerkleProof, isEmpty } from '@/helpers';
+import { encrypt, getMerkleProof } from '@/helpers';
 import { ConfigService } from '@nestjs/config';
 import { S3Service } from '../aws/s3/s3.service';
 import {
@@ -107,15 +107,6 @@ export class NftService {
     await Promise.all(
       pools.map(async (pool, idx) => {
         if (pool.collection && pool.collection.length > 0) {
-          const currentTime = new Date().getTime();
-          let isOnAir = true;
-          if (pool.start_time && pool.end_time) {
-            if (
-              currentTime < new Date(pool.start_time).getTime() ||
-              currentTime > new Date(pool.end_time).getTime()
-            )
-              isOnAir = false;
-          }
           const collection = pool.collection[0];
           const mintingPool: PoolDto = {
             pool_id: String(pool._id || 'NONE'),
@@ -145,34 +136,32 @@ export class NftService {
               return String(info.pool_id) === String(pool._id);
             });
             if (wallet) {
-              if (isOnAir) {
-                let holders = [];
+              let holders = [];
+              // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+              // @ts-expect-error
+              const holderCache = global[
+                `pool-hd-${String(pool._id)}`
+              ] as IGlobalCacheHolder;
+              if (
+                holderCache &&
+                holderCache?.last_update_time &&
+                holderCache.holders &&
+                holderCache?.holders?.length > 0 &&
+                new Date(
+                  pool.modify_holder_time || '2001-01-01T00:01:00.000Z',
+                ).getTime() < holderCache?.last_update_time
+              ) {
+                holders = holderCache?.holders || [];
+              } else {
+                holders = await this.getHoldersOfPool(pool._id);
                 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
                 // @ts-expect-error
-                const holderCache = global[
-                  `pool-hd-${String(pool._id)}`
-                ] as IGlobalCacheHolder;
-                if (
-                  holderCache &&
-                  holderCache?.last_update_time &&
-                  holderCache.holders &&
-                  holderCache?.holders?.length > 0 &&
-                  new Date(
-                    pool.modify_holder_time || '2001-01-01T00:01:00.000Z',
-                  ).getTime() < holderCache?.last_update_time
-                ) {
-                  holders = holderCache?.holders || [];
-                } else {
-                  holders = await this.getHoldersOfPool(pool._id);
-                  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-                  // @ts-expect-error
-                  global[`pool-hd-${String(pool._id)}`] = {
-                    last_update_time: new Date().getTime(),
-                    holders,
-                  } as IGlobalCacheHolder;
-                }
-                pool.holders = holders;
+                global[`pool-hd-${String(pool._id)}`] = {
+                  last_update_time: new Date().getTime(),
+                  holders,
+                } as IGlobalCacheHolder;
               }
+              pool.holders = holders;
               mintingPool.user_pool_minted_total = nftHolderOfPool.length;
               mintingPool.is_minted =
                 nftHolderOfPool.length >= (pool.total_mint_per_wallet || 1);
@@ -260,35 +249,20 @@ export class NftService {
     const pools: NftWhiteList[] =
       await this.nftWhiteListModel.aggregate(aggregateInput);
     return pools.map((pool) => {
-      if (pool.is_other_community) {
-        pool.collection = [
-          {
-            _id: `community-${pool.order}`,
-            address: `community-${pool.order}`,
-            name: pool.community_name || `community-${pool.order}`,
-            symbol: `COMMUNITY-${pool.order}`,
-            icon:
-              pool.community_image ||
-              's3://public/icons/nfts/community.png'.replace(
-                's3://',
-                `${process.env.AWS_S3_BUCKET_URL}/`,
-              ),
-          },
-        ];
-      } else if (pool.collection_address === `FCFS-${pool.season_id}`) {
-        pool.collection = [
-          {
-            _id: `FCFS-${pool.season_id}`,
-            address: `FCFS-${pool.season_id}`,
-            name: 'First come first serve',
-            symbol: 'FCFS',
-            icon: 's3://public/icons/nfts/fcfs.png'.replace(
+      pool.collection = [
+        {
+          _id: `community-${pool.order}`,
+          address: `community-${pool.order}`,
+          name: pool.community_name || `community-${pool.order}`,
+          symbol: `COMMUNITY-${pool.order}`,
+          icon:
+            pool.community_image ||
+            's3://public/icons/nfts/community.png'.replace(
               's3://',
               `${process.env.AWS_S3_BUCKET_URL}/`,
             ),
-          },
-        ];
-      }
+        },
+      ];
       return pool;
     });
   }
