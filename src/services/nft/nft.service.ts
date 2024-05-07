@@ -259,35 +259,20 @@ export class NftService {
     const pools: NftWhiteList[] =
       await this.nftWhiteListModel.aggregate(aggregateInput);
     return pools.map((pool) => {
-      if (pool.is_other_community) {
-        pool.collection = [
-          {
-            _id: `community-${pool.order}`,
-            address: `community-${pool.order}`,
-            name: pool.community_name || `community-${pool.order}`,
-            symbol: `COMMUNITY-${pool.order}`,
-            icon:
-              pool.community_image ||
-              's3://public/icons/nfts/community.png'.replace(
-                's3://',
-                `${process.env.AWS_S3_BUCKET_URL}/`,
-              ),
-          },
-        ];
-      } else if (pool.collection_address === `FCFS-${pool.season_id}`) {
-        pool.collection = [
-          {
-            _id: `FCFS-${pool.season_id}`,
-            address: `FCFS-${pool.season_id}`,
-            name: 'First come first serve',
-            symbol: 'FCFS',
-            icon: 's3://public/icons/nfts/fcfs.png'.replace(
+      pool.collection = [
+        {
+          _id: `community-${pool.order}`,
+          address: `community-${pool.order}`,
+          name: pool.community_name || `community-${pool.order}`,
+          symbol: `COMMUNITY-${pool.order}`,
+          icon:
+            pool.community_image ||
+            's3://public/icons/nfts/community.png'.replace(
               's3://',
               `${process.env.AWS_S3_BUCKET_URL}/`,
             ),
-          },
-        ];
-      }
+        },
+      ];
       return pool;
     });
   }
