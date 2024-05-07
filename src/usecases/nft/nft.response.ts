@@ -132,6 +132,11 @@ class MintingPoolRoundDto {
   @ApiProperty({
     type: String,
   })
+  season_id: string;
+
+  @ApiProperty({
+    type: String,
+  })
   collection_address?: string;
 
   @ApiProperty({

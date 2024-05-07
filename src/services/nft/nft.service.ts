@@ -15,7 +15,7 @@ import mongoose, {
 } from 'mongoose';
 import { plainToInstance } from 'class-transformer';
 import { MintingPoolRoundDto, PoolDto } from '@usecases/nft/nft.response';
-import { encrypt, getMerkleProof, isEmpty } from '@/helpers';
+import { encrypt, getMerkleProof } from '@/helpers';
 import { ConfigService } from '@nestjs/config';
 import { S3Service } from '../aws/s3/s3.service';
 import {
@@ -25,6 +25,10 @@ import {
 import { KyupadNft } from '@schemas/kyupad_nft.schema';
 import { HeliusEventHook } from '@/services/helius/helius.response';
 import { HeliusService } from '@/services/helius/helius.service';
+import { AppsyncService } from '@/services/aws/appsync/appsync.service';
+import { AppsyncNftActionInput } from '@/services/nft/nft.input';
+import { NFT_ACTION_SCHEMA } from '@/services/nft/Nft.appsyncschema';
+import { EUserAction } from '@/enums';
 
 interface IGlobalCacheHolder {
   last_update_time?: number;
@@ -46,6 +50,8 @@ export class NftService {
     private readonly seasonService: SeasonService,
     @Inject(HeliusService)
     private readonly heliusService: HeliusService,
+    @Inject(AppsyncService)
+    private readonly appsyncService: AppsyncService,
     private readonly configService: ConfigService,
     private readonly s3Service: S3Service,
     @InjectConnection() private readonly connection: mongoose.Connection,
@@ -88,6 +94,7 @@ export class NftService {
     }
     const response = new MintingPoolRoundDto();
     response.collection_address = season.nft_collection?.address;
+    response.season_id = String(season._id);
     response.contract_address = season.nft_contract;
     response.merkle_tree = season.merkle_tree;
     response.lookup_table_address = season.lookup_table_address;
@@ -107,15 +114,6 @@ export class NftService {
     await Promise.all(
       pools.map(async (pool, idx) => {
         if (pool.collection && pool.collection.length > 0) {
-          const currentTime = new Date().getTime();
-          let isOnAir = true;
-          if (pool.start_time && pool.end_time) {
-            if (
-              currentTime < new Date(pool.start_time).getTime() ||
-              currentTime > new Date(pool.end_time).getTime()
-            )
-              isOnAir = false;
-          }
           const collection = pool.collection[0];
           const mintingPool: PoolDto = {
             pool_id: String(pool._id || 'NONE'),
@@ -145,34 +143,32 @@ export class NftService {
               return String(info.pool_id) === String(pool._id);
             });
             if (wallet) {
-              if (isOnAir) {
-                let holders = [];
+              let holders = [];
+              // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+              // @ts-expect-error
+              const holderCache = global[
+                `pool-hd-${String(pool._id)}`
+              ] as IGlobalCacheHolder;
+              if (
+                holderCache &&
+                holderCache?.last_update_time &&
+                holderCache.holders &&
+                holderCache?.holders?.length > 0 &&
+                new Date(
+                  pool.modify_holder_time || '2001-01-01T00:01:00.000Z',
+                ).getTime() < holderCache?.last_update_time
+              ) {
+                holders = holderCache?.holders || [];
+              } else {
+                holders = await this.getHoldersOfPool(pool._id);
                 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
                 // @ts-expect-error
-                const holderCache = global[
-                  `pool-hd-${String(pool._id)}`
-                ] as IGlobalCacheHolder;
-                if (
-                  holderCache &&
-                  holderCache?.last_update_time &&
-                  holderCache.holders &&
-                  holderCache?.holders?.length > 0 &&
-                  new Date(
-                    pool.modify_holder_time || '2001-01-01T00:01:00.000Z',
-                  ).getTime() < holderCache?.last_update_time
-                ) {
-                  holders = holderCache?.holders || [];
-                } else {
-                  holders = await this.getHoldersOfPool(pool._id);
-                  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-                  // @ts-expect-error
-                  global[`pool-hd-${String(pool._id)}`] = {
-                    last_update_time: new Date().getTime(),
-                    holders,
-                  } as IGlobalCacheHolder;
-                }
-                pool.holders = holders;
+                global[`pool-hd-${String(pool._id)}`] = {
+                  last_update_time: new Date().getTime(),
+                  holders,
+                } as IGlobalCacheHolder;
               }
+              pool.holders = holders;
               mintingPool.user_pool_minted_total = nftHolderOfPool.length;
               mintingPool.is_minted =
                 nftHolderOfPool.length >= (pool.total_mint_per_wallet || 1);
@@ -260,35 +256,20 @@ export class NftService {
     const pools: NftWhiteList[] =
       await this.nftWhiteListModel.aggregate(aggregateInput);
     return pools.map((pool) => {
-      if (pool.is_other_community) {
-        pool.collection = [
-          {
-            _id: `community-${pool.order}`,
-            address: `community-${pool.order}`,
-            name: pool.community_name || `community-${pool.order}`,
-            symbol: `COMMUNITY-${pool.order}`,
-            icon:
-              pool.community_image ||
-              's3://public/icons/nfts/community.png'.replace(
-                's3://',
-                `${process.env.AWS_S3_BUCKET_URL}/`,
-              ),
-          },
-        ];
-      } else if (pool.collection_address === `FCFS-${pool.season_id}`) {
-        pool.collection = [
-          {
-            _id: `FCFS-${pool.season_id}`,
-            address: `FCFS-${pool.season_id}`,
-            name: 'First come first serve',
-            symbol: 'FCFS',
-            icon: 's3://public/icons/nfts/fcfs.png'.replace(
+      pool.collection = [
+        {
+          _id: `community-${pool.order}`,
+          address: `community-${pool.order}`,
+          name: pool.community_name || `community-${pool.order}`,
+          symbol: `COMMUNITY-${pool.order}`,
+          icon:
+            pool.community_image ||
+            's3://public/icons/nfts/community.png'.replace(
               's3://',
               `${process.env.AWS_S3_BUCKET_URL}/`,
             ),
-          },
-        ];
-      }
+        },
+      ];
       return pool;
     });
   }
@@ -373,7 +354,9 @@ export class NftService {
               this.logger.error(
                 `Cannot sync [COMPRESSED_NFT_MINT] of signature [${transaction.signature}]`,
               );
-            } else await this.updateKyuPadNftByTx(transaction);
+            } else {
+              await this.updateKyuPadNftByTx(transaction);
+            }
           }
         } catch (e) {
           this.logger.error(
@@ -483,6 +466,8 @@ export class NftService {
       const compressedData = transaction.events.compressed[0];
       const uri = compressedData?.metadata.uri;
       const info = uri.split('metadata/cnft/')[1].split('/');
+      const seasonId = info[0];
+      const poolId = info[1];
       const nftId = info[2].replace('.json', '');
       const nftUpdateData: UpdateQuery<KyupadNft> = {
         collection_address: compressedData?.metadata.collection.key,
@@ -494,6 +479,16 @@ export class NftService {
         new mongoose.Types.ObjectId(nftId),
         nftUpdateData,
       );
+      await this.pushMintedAction({
+        input: {
+          action_type: EUserAction.NFT_MINTED,
+          season_id: seasonId,
+          pool_id: poolId,
+          nft_off_chain_id: nftId,
+          minted_wallet: nftUpdateData.owner_address,
+          action_at: new Date().toISOString(),
+        },
+      });
       this.logger.log(
         `Sync [COMPRESSED_NFT_MINT] of signature [${transaction.signature}] id [${compressedData.assetId}] successful`,
       );
@@ -505,5 +500,22 @@ export class NftService {
     const pool = await this.nftWhiteListModel.findById(id);
     if (!pool) return [];
     return pool?.holders || [];
+  }
+
+  async pushMintedAction(input: AppsyncNftActionInput): Promise<void> {
+    NFT_ACTION_SCHEMA.variables = {
+      input: {
+        ...input.input,
+      },
+    };
+    await this.appsyncService.query<AppsyncNftActionInput, any>(
+      NFT_ACTION_SCHEMA,
+      {
+        cls: AppsyncNftActionInput,
+        plain: true,
+        functionName: NFT_ACTION_SCHEMA.operationName,
+        passError: true,
+      },
+    );
   }
 }
