@@ -5,16 +5,22 @@ import {
   Get,
   Post,
   Query,
+  UnauthorizedException,
+  UseGuards,
 } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
+  ApiBearerAuth,
   ApiBody,
   ApiInternalServerErrorResponse,
   ApiOkResponse,
   ApiTags,
 } from '@nestjs/swagger';
 import { NftService } from '@/services/nft/nft.service';
-import { MintingPoolRoundResponse } from '@usecases/nft/nft.response';
+import {
+  GeneratePreferCodeResponse,
+  MintingPoolRoundResponse,
+} from '@usecases/nft/nft.response';
 import {
   NftMintingPoolQuery,
   NftSyncBySignatureInput,
@@ -150,6 +156,33 @@ export class NftController {
       statusCode: 200,
       data: {
         status: 'SUCCESS',
+      },
+    };
+  }
+
+  @Get('/generate-prefer-code')
+  @ApiOkResponse({
+    type: GeneratePreferCodeResponse,
+  })
+  @ApiBadRequestResponse({ description: 'Bad Request' })
+  @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
+  async generatePreferCode(): Promise<GeneratePreferCodeResponse> {
+    const accessToken = this.cls.get('accessToken');
+    let wallet;
+    if (accessToken!) throw new UnauthorizedException();
+    try {
+      await this.jwtService.verifyAsync(accessToken, {
+        secret: process.env.JWT_ACCESS_TOKEN_SECRET,
+      });
+    } catch {
+      throw new UnauthorizedException('Invalid token');
+    }
+    if (!wallet) throw new UnauthorizedException();
+    const preferUrl = await this.nftService.generatePreferCode(wallet);
+    return {
+      statusCode: 200,
+      data: {
+        prefer_url: preferUrl,
       },
     };
   }

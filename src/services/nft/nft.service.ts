@@ -531,4 +531,9 @@ export class NftService {
     });
     return JSON.parse(JSON.stringify(collections || []));
   }
+
+  async generatePreferCode(wallet: string): Promise<string> {
+    const code = encrypt(wallet, process.env.PREFER_ENCRYPT_TOKEN as string);
+    return `${process.env.WEB_URL}/mint-nft?prefer_code=${code}`;
+  }
 }
