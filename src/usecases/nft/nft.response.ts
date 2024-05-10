@@ -192,10 +192,24 @@ class MintingRoundRoadMapResponse extends withBaseResponse(NftWhiteList, {
   isArray: true,
 }) {}
 
+class GeneratePreferCode {
+  @ApiProperty({
+    type: String,
+    required: true,
+  })
+  ref_url: string;
+}
+
+class GeneratePreferCodeResponse extends withBaseResponse(GeneratePreferCode, {
+  isArray: false,
+}) {}
+
 export {
   PoolDto,
   MintingPoolRoundResponse,
   MintingPoolRoundDto,
   MintingPoolDto,
   MintingRoundRoadMapResponse,
+  GeneratePreferCodeResponse,
+  GeneratePreferCode,
 };

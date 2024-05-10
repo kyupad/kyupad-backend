@@ -21,6 +21,7 @@ const envSchema = Joi.object({
   HELIUS_API_URL: Joi.string().required(),
   HELIUS_API_KEY: Joi.string().required(),
   AWS_APPSYNC_ENDPOINT: Joi.string().required(),
+  PREFER_ENCRYPT_TOKEN: Joi.string().required(),
 });
 
 export { envSchema };

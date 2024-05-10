@@ -15,7 +15,7 @@ import mongoose, {
 } from 'mongoose';
 import { plainToInstance } from 'class-transformer';
 import { MintingPoolRoundDto, PoolDto } from '@usecases/nft/nft.response';
-import { encrypt, getMerkleProof } from '@/helpers';
+import { decrypt, encrypt, getMerkleProof } from '@/helpers';
 import { ConfigService } from '@nestjs/config';
 import { S3Service } from '../aws/s3/s3.service';
 import {
@@ -275,7 +275,7 @@ export class NftService {
   }
 
   async generateCNftMetaData(
-    { id }: GenerateCnftMetaDataBody,
+    { id, ref_code }: GenerateCnftMetaDataBody,
     wallet: string,
   ): Promise<GenerateCnftMetadataResult> {
     const season = await this.seasonService.activeSeason();
@@ -289,6 +289,14 @@ export class NftService {
           season_id: String(season._id),
           request_wallet: wallet,
         };
+        if (ref_code) {
+          nftInput.ref_code = ref_code;
+          try {
+            nftInput.ref_wallet = Buffer.from(ref_code, 'base64').toString(
+              'ascii',
+            );
+          } catch (error) {}
+        }
         const results = await this.kyupadNftModel.create([nftInput], {
           session,
         });
@@ -451,7 +459,6 @@ export class NftService {
       );
     } catch (e) {}
     const transactions = await this.heliusService.getTxInfo(signature);
-    console.log('--------', signature, JSON.stringify(transactions));
     const mintTx = transactions.find(
       (tx) => tx?.type === 'COMPRESSED_NFT_MINT',
     );
@@ -517,5 +524,11 @@ export class NftService {
         passError: true,
       },
     );
+  }
+
+  async generatePreferCode(wallet: string): Promise<string> {
+    const code = Buffer.from(wallet).toString('base64');
+    const codeBase64 = encodeURIComponent(code);
+    return `${process.env.WEB_URL}/mint-nft?ref_code=${codeBase64}`;
   }
 }

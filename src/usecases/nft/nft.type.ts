@@ -10,6 +10,8 @@ class GenerateCnftMetaDataBody {
   seller_fee_basis_points: number;
   @ApiProperty({ required: false })
   creators?: string[];
+  @ApiProperty({ required: false })
+  ref_code?: string;
 }
 
 class GenerateCnftMetadataResult {

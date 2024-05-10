@@ -12,7 +12,7 @@ export class AllExceptionsFilter extends BaseExceptionFilter {
 
   catch(exception: any, host: ArgumentsHost) {
     this.logger.error(
-      exception.status === 500 ? exception.stack : exception.message,
+      exception.status === 500 ? exception.stack : exception.stack,
     );
     super.catch(
       exception.status === 500
