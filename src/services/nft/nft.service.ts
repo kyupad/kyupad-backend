@@ -296,7 +296,7 @@ export class NftService {
           nftInput.prefer_code = prefer_code;
           try {
             nftInput.prefer_wallet = decrypt(
-              prefer_code,
+              decodeURIComponent(prefer_code),
               process.env.PREFER_ENCRYPT_TOKEN as string,
             );
           } catch (error) {}
@@ -543,6 +543,7 @@ export class NftService {
 
   async generatePreferCode(wallet: string): Promise<string> {
     const code = encrypt(wallet, process.env.PREFER_ENCRYPT_TOKEN as string);
-    return `${process.env.WEB_URL}/mint-nft?prefer_code=${code}`;
+    const codeBase64 = encodeURIComponent(code);
+    return `${process.env.WEB_URL}/mint-nft?prefer_code=${codeBase64}`;
   }
 }

@@ -6,11 +6,9 @@ import {
   Post,
   Query,
   UnauthorizedException,
-  UseGuards,
 } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
-  ApiBearerAuth,
   ApiBody,
   ApiInternalServerErrorResponse,
   ApiOkResponse,
@@ -168,17 +166,9 @@ export class NftController {
   @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
   async generatePreferCode(): Promise<GeneratePreferCodeResponse> {
     const accessToken = this.cls.get('accessToken');
-    let wallet;
     if (!accessToken) throw new UnauthorizedException();
-    try {
-      await this.jwtService.verifyAsync(accessToken, {
-        secret: process.env.JWT_ACCESS_TOKEN_SECRET,
-      });
-      const userInfo = this.jwtService.decode(accessToken) as any;
-      wallet = userInfo?.sub;
-    } catch {
-      throw new UnauthorizedException('Invalid token');
-    }
+    const userInfo = this.jwtService.decode(accessToken) as any;
+    const wallet = userInfo?.sub;
     if (!wallet) throw new UnauthorizedException();
     const preferUrl = await this.nftService.generatePreferCode(wallet);
     return {
