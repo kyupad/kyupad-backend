@@ -296,7 +296,7 @@ export class NftService {
           nftInput.prefer_code = prefer_code;
           try {
             nftInput.prefer_wallet = decrypt(
-              decodeURIComponent(prefer_code),
+              prefer_code,
               process.env.PREFER_ENCRYPT_TOKEN as string,
             );
           } catch (error) {}
