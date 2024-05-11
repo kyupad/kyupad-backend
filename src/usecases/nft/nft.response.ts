@@ -197,7 +197,7 @@ class GeneratePreferCode {
     type: String,
     required: true,
   })
-  prefer_url: string;
+  ref_url: string;
 }
 
 class GeneratePreferCodeResponse extends withBaseResponse(GeneratePreferCode, {

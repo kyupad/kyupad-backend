@@ -158,7 +158,7 @@ export class NftController {
     };
   }
 
-  @Get('/generate-prefer-code')
+  @Get('/generate-ref-code')
   @ApiOkResponse({
     type: GeneratePreferCodeResponse,
   })
@@ -174,7 +174,7 @@ export class NftController {
     return {
       statusCode: 200,
       data: {
-        prefer_url: preferUrl,
+        ref_url: preferUrl,
       },
     };
   }

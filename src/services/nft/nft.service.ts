@@ -278,7 +278,7 @@ export class NftService {
   }
 
   async generateCNftMetaData(
-    { id, prefer_code }: GenerateCnftMetaDataBody,
+    { id, ref_code }: GenerateCnftMetaDataBody,
     wallet: string,
   ): Promise<GenerateCnftMetadataResult> {
     const season = await this.seasonService.activeSeason();
@@ -292,11 +292,11 @@ export class NftService {
           season_id: String(season._id),
           request_wallet: wallet,
         };
-        if (prefer_code) {
-          nftInput.prefer_code = prefer_code;
+        if (ref_code) {
+          nftInput.ref_code = ref_code;
           try {
-            nftInput.prefer_wallet = decrypt(
-              prefer_code,
+            nftInput.ref_wallet = decrypt(
+              ref_code,
               process.env.PREFER_ENCRYPT_TOKEN as string,
             );
           } catch (error) {}
@@ -544,6 +544,6 @@ export class NftService {
   async generatePreferCode(wallet: string): Promise<string> {
     const code = encrypt(wallet, process.env.PREFER_ENCRYPT_TOKEN as string);
     const codeBase64 = encodeURIComponent(code);
-    return `${process.env.WEB_URL}/mint-nft?prefer_code=${codeBase64}`;
+    return `${process.env.WEB_URL}/mint-nft?ref_code=${codeBase64}`;
   }
 }

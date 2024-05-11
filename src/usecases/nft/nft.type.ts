@@ -11,7 +11,7 @@ class GenerateCnftMetaDataBody {
   @ApiProperty({ required: false })
   creators?: string[];
   @ApiProperty({ required: false })
-  prefer_code?: string;
+  ref_code?: string;
 }
 
 class GenerateCnftMetadataResult {
