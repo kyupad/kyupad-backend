@@ -15,7 +15,7 @@ import mongoose, {
 } from 'mongoose';
 import { plainToInstance } from 'class-transformer';
 import { MintingPoolRoundDto, PoolDto } from '@usecases/nft/nft.response';
-import { encrypt, getMerkleProof } from '@/helpers';
+import { decrypt, encrypt, getMerkleProof } from '@/helpers';
 import { ConfigService } from '@nestjs/config';
 import { S3Service } from '../aws/s3/s3.service';
 import {
@@ -278,7 +278,7 @@ export class NftService {
   }
 
   async generateCNftMetaData(
-    { id }: GenerateCnftMetaDataBody,
+    { id, prefer_code }: GenerateCnftMetaDataBody,
     wallet: string,
   ): Promise<GenerateCnftMetadataResult> {
     const season = await this.seasonService.activeSeason();
@@ -292,6 +292,15 @@ export class NftService {
           season_id: String(season._id),
           request_wallet: wallet,
         };
+        if (prefer_code) {
+          nftInput.prefer_code = prefer_code;
+          try {
+            nftInput.prefer_wallet = decrypt(
+              prefer_code,
+              process.env.PREFER_ENCRYPT_TOKEN as string,
+            );
+          } catch (error) {}
+        }
         const results = await this.kyupadNftModel.create([nftInput], {
           session,
         });

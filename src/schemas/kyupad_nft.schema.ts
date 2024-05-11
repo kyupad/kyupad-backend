@@ -47,6 +47,12 @@ export class KyupadNft {
 
   @Prop({ type: String, required: false })
   error_info?: string;
+
+  @Prop({ type: String, required: false })
+  prefer_code?: string;
+
+  @Prop({ type: String, required: false })
+  prefer_wallet?: string;
 }
 
 export const KyupadNftSchema = SchemaFactory.createForClass(KyupadNft);
