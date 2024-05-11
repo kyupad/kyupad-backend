@@ -295,9 +295,8 @@ export class NftService {
         if (ref_code) {
           nftInput.ref_code = ref_code;
           try {
-            nftInput.ref_wallet = decrypt(
-              ref_code,
-              process.env.PREFER_ENCRYPT_TOKEN as string,
+            nftInput.ref_wallet = Buffer.from(ref_code, 'base64').toString(
+              'ascii',
             );
           } catch (error) {}
         }
@@ -542,7 +541,7 @@ export class NftService {
   }
 
   async generatePreferCode(wallet: string): Promise<string> {
-    const code = encrypt(wallet, process.env.PREFER_ENCRYPT_TOKEN as string);
+    const code = Buffer.from(wallet).toString('base64');
     const codeBase64 = encodeURIComponent(code);
     return `${process.env.WEB_URL}/mint-nft?ref_code=${codeBase64}`;
   }
