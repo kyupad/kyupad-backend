@@ -169,11 +169,13 @@ export class NftController {
   async generatePreferCode(): Promise<GeneratePreferCodeResponse> {
     const accessToken = this.cls.get('accessToken');
     let wallet;
-    if (accessToken!) throw new UnauthorizedException();
+    if (!accessToken) throw new UnauthorizedException();
     try {
       await this.jwtService.verifyAsync(accessToken, {
         secret: process.env.JWT_ACCESS_TOKEN_SECRET,
       });
+      const userInfo = this.jwtService.decode(accessToken) as any;
+      wallet = userInfo?.sub;
     } catch {
       throw new UnauthorizedException('Invalid token');
     }
