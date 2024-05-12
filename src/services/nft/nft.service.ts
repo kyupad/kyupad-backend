@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Inject,
   Injectable,
+  InternalServerErrorException,
   Logger,
 } from '@nestjs/common';
 import { SeasonService } from '@/services/season/season.service';
@@ -15,7 +16,7 @@ import mongoose, {
 } from 'mongoose';
 import { plainToInstance } from 'class-transformer';
 import { MintingPoolRoundDto, PoolDto } from '@usecases/nft/nft.response';
-import { decrypt, encrypt, getMerkleProof } from '@/helpers';
+import { encrypt, getMerkleProof } from '@/helpers';
 import { ConfigService } from '@nestjs/config';
 import { S3Service } from '../aws/s3/s3.service';
 import {
@@ -29,6 +30,7 @@ import { AppsyncService } from '@/services/aws/appsync/appsync.service';
 import { AppsyncNftActionInput } from '@/services/nft/nft.input';
 import { NFT_ACTION_SCHEMA } from '@/services/nft/Nft.appsyncschema';
 import { EUserAction } from '@/enums';
+import { RefCode } from '@schemas/ref_code.schema';
 
 interface IGlobalCacheHolder {
   last_update_time?: number;
@@ -46,6 +48,8 @@ export class NftService {
     private readonly nftWhiteListModel: Model<NftWhiteList>,
     @InjectModel(KyupadNft.name)
     private readonly kyupadNftModel: Model<KyupadNft>,
+    @InjectModel(RefCode.name)
+    private readonly refCodeModel: Model<RefCode>,
     @Inject(SeasonService)
     private readonly seasonService: SeasonService,
     @Inject(HeliusService)
@@ -291,11 +295,6 @@ export class NftService {
         };
         if (ref_code) {
           nftInput.ref_code = ref_code;
-          try {
-            nftInput.ref_wallet = Buffer.from(ref_code, 'base64').toString(
-              'ascii',
-            );
-          } catch (error) {}
         }
         const results = await this.kyupadNftModel.create([nftInput], {
           session,
@@ -527,8 +526,11 @@ export class NftService {
   }
 
   async generatePreferCode(wallet: string): Promise<string> {
-    const code = Buffer.from(wallet).toString('base64');
-    const codeBase64 = encodeURIComponent(code);
-    return `${process.env.WEB_URL}/mint-nft?ref_code=${codeBase64}`;
+    const refCodeInfo = await this.refCodeModel.create({
+      wallet,
+    });
+    if (!refCodeInfo)
+      throw new InternalServerErrorException('Cannot create ref code');
+    return `${process.env.WEB_URL}/mint-nft?ref_code=${String(refCodeInfo._id)}`;
   }
 }
