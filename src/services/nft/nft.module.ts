@@ -14,6 +14,7 @@ import {
   NftCollection,
   NftCollectionSchema,
 } from '@schemas/nft_collections.schema';
+import { RefCode, RefCodeSchema } from '@schemas/ref_code.schema';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import {
       { name: NftWhiteList.name, schema: NftWhiteListSchema },
       { name: KyupadNft.name, schema: KyupadNftSchema },
       { name: NftCollection.name, schema: NftCollectionSchema },
+      { name: RefCode.name, schema: RefCodeSchema },
     ]),
     NftServiceModule,
     SeasonServiceModule,
