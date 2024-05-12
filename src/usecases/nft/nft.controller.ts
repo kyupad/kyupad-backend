@@ -158,7 +158,7 @@ export class NftController {
     };
   }
 
-  @Get('/generate-ref-code')
+  @Get('/generate-prefer-code')
   @ApiOkResponse({
     type: GeneratePreferCodeResponse,
   })
