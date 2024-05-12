@@ -131,6 +131,7 @@ export class NftService {
             total_mint_per_wallet: pool.total_mint_per_wallet,
             pool_image: collection.icon,
             destination_wallet: pool.destination_wallet,
+            order: pool.order,
           };
           if (
             (idx === 0 && !poolId) ||
@@ -217,6 +218,7 @@ export class NftService {
         }
       }),
     );
+    activePools.sort((a, b) => (a.order || 0) - (b.order || 0));
     response.community_round = {
       ...response.community_round,
       active_pools: activePools,
@@ -526,6 +528,11 @@ export class NftService {
   }
 
   async generatePreferCode(wallet: string): Promise<string> {
+    const refInfoCheck = await this.refCodeModel.findOne({
+      wallet: wallet || '',
+    });
+    if (refInfoCheck)
+      return `${process.env.WEB_URL}/mint-nft?ref_code=${String(refInfoCheck._id)}`;
     const refCodeInfo = await this.refCodeModel.create({
       wallet,
     });

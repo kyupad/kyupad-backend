@@ -113,6 +113,9 @@ class PoolDto {
     type: String,
   })
   user_pool_minted_total?: number;
+
+  @Expose({ groups: ['detail', 'list'] })
+  order?: number;
 }
 
 class MintingPoolDto {
