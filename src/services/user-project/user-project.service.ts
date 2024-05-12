@@ -26,6 +26,12 @@ import { Project } from '@schemas/project.schema';
 import { NftService } from '@/services/nft/nft.service';
 import { ProjectInvestingInfoService } from '../project-investing-info/project-investing-info.service';
 import { FungibleTokensService } from '../fungible-tokens/fungible-tokens.service';
+import { encrypt, getMerkleProof } from '@/helpers';
+
+interface IGlobalCacheHolder {
+  last_update_time?: number;
+  whitelist?: string[];
+}
 
 @Injectable()
 export class UserProjectService {
@@ -252,7 +258,8 @@ export class UserProjectService {
       ]);
 
       const [userProject, investingInfo] = result;
-      const { total_winner, total_owner_winning_tickets } = userProject;
+      const { total_winner, total_owner_winning_tickets, used_ticket } =
+        userProject;
 
       info.investment_info = {
         currency: tokens ? tokens?.[0]?.symbol : projectInfo?.price?.currency,
@@ -261,9 +268,46 @@ export class UserProjectService {
         token_offered: projectInfo.info?.token_offered,
         total_winner,
         total_owner_winning_tickets,
-        tickets_used: 0, //FIXME: ko fic cung,
+        tickets_used: used_ticket,
         destination_wallet: investingInfo?.destination_wallet || '',
       };
+      if (
+        info.investment_info?.total_owner_winning_tickets &&
+        info.investment_info?.total_owner_winning_tickets >
+          info.investment_info?.tickets_used
+      ) {
+        let whitelist: string[];
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-expect-error
+        const whitelistCache = global[
+          `project-hd-${String(projectInfo._id)}`
+        ] as IGlobalCacheHolder;
+        if (
+          whitelistCache &&
+          whitelistCache?.last_update_time &&
+          whitelistCache.whitelist &&
+          whitelistCache?.whitelist?.length > 0
+        ) {
+          whitelist = whitelistCache?.whitelist || [];
+        } else {
+          whitelist = investingInfo?.whitelist || [];
+          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+          // @ts-expect-error
+          global[`project-hd-${String(projectInfo._id)}`] = {
+            last_update_time: new Date().getTime(),
+            whitelist,
+          } as IGlobalCacheHolder;
+        }
+        const merkleRoof = getMerkleProof(
+          whitelist || [],
+          `${wallet}_${info.investment_info?.total_owner_winning_tickets || 0}` ||
+            '',
+        );
+        info.investment_info.merkle_proof = encrypt(
+          JSON.stringify(merkleRoof),
+          process.env.CRYPTO_ENCRYPT_TOKEN as string,
+        );
+      }
     }
   }
 }

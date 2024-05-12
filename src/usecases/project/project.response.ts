@@ -50,6 +50,11 @@ class UserProjectInvestmentInfo {
     type: String,
   })
   currency_address?: string;
+
+  @ApiProperty({
+    type: String,
+  })
+  merkle_proof?: string;
 }
 
 class ProjectDetailDto {

@@ -71,6 +71,9 @@ export class UserProject {
   @Prop({ type: Number, required: false })
   total_ticket?: number;
 
+  @Prop({ type: Number, required: false })
+  used_ticket?: number;
+
   @ApiProperty({ type: Number })
   @Prop({
     type: Number,

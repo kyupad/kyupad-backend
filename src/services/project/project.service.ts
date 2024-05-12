@@ -254,6 +254,7 @@ export class ProjectService {
   ): Promise<{
     total_owner_winning_tickets: number;
     total_winner: number;
+    used_ticket: number;
   }> {
     const [myUserProject, totalTicketUserProject] = await Promise.all([
       this.userProjectModel.findOne({
@@ -273,6 +274,7 @@ export class ProjectService {
         ? myUserProject.total_ticket || 0
         : 0,
       total_winner: totalTicketUserProject | 0,
+      used_ticket: myUserProject ? myUserProject.used_ticket || 0 : 0,
     };
   }
 
