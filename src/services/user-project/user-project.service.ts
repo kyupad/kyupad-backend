@@ -24,6 +24,8 @@ import {
 } from '@usecases/project/project.response';
 import { Project } from '@schemas/project.schema';
 import { NftService } from '@/services/nft/nft.service';
+import { ProjectInvestingInfoService } from '../project-investing-info/project-investing-info.service';
+import { FungibleTokensService } from '../fungible-tokens/fungible-tokens.service';
 
 @Injectable()
 export class UserProjectService {
@@ -39,6 +41,10 @@ export class UserProjectService {
     private readonly seasonService: SeasonService,
     @Inject(NftService)
     private readonly nftService: NftService,
+    @Inject(ProjectInvestingInfoService)
+    private readonly projectInvestingInfo: ProjectInvestingInfoService,
+    @Inject(FungibleTokensService)
+    private readonly fungibleTokensService: FungibleTokensService,
   ) {}
 
   async create(input: UserProject): Promise<UserProject> {
@@ -102,7 +108,7 @@ export class UserProjectService {
       {
         status: EProjectStatus.ACTIVE,
       },
-      { timeline: 1, id: 1, info: 1, status: 1 },
+      { timeline: 1, id: 1, info: 1, status: 1, price: 1 },
     );
     const projectInfo = JSON.parse(JSON.stringify(project)) as Project;
     const result: UserProjectRegistrationDto = {
@@ -215,19 +221,48 @@ export class UserProjectService {
         participants: 0,
       };
     }
+
     if (info.progress_status === EProjectProgressStatus.INVESTING) {
-      const { total_winner, total_owner_winning_tickets } =
-        await this.projectService.aggregateUsersProjectTicket(
+      const aggregateUsersProjectTicket =
+        this.projectService.aggregateUsersProjectTicket(
           info.project_info.id || '',
           wallet,
         );
+
+      const projectInvestingInfo = this.projectInvestingInfo.findByProjectId({
+        project_id: info.project_info.id || '',
+      });
+
+      let tokens = null;
+      if (
+        projectInfo?.price?.currency &&
+        projectInfo?.price?.currency?.toLocaleLowerCase() !== 'sol'
+      ) {
+        tokens = await this.fungibleTokensService.findTokens({
+          address: projectInfo?.price?.currency,
+          is_stable: true,
+        });
+        if (!tokens || tokens.length === 0)
+          throw new BadRequestException('Currency not found');
+      }
+
+      const result = await Promise.all([
+        aggregateUsersProjectTicket,
+        projectInvestingInfo,
+      ]);
+
+      const [userProject, investingInfo] = result;
+      const { total_winner, total_owner_winning_tickets } = userProject;
+
       info.investment_info = {
-        currency: 'USDT', //FIXME: ko fic cung
+        currency: tokens ? tokens?.[0]?.symbol : projectInfo?.price?.currency,
+        ...(tokens ? { currency_address: tokens?.[0].address } : {}),
         ticket_size: projectInfo.info?.ticket_size,
         token_offered: projectInfo.info?.token_offered,
         total_winner,
         total_owner_winning_tickets,
-        tickets_used: 0, //FIXME: ko fic cung
+        tickets_used: 0, //FIXME: ko fic cung,
+        destination_wallet: investingInfo?.destination_wallet || '',
       };
     }
   }

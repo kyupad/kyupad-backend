@@ -46,6 +46,13 @@ export class FungibleToken {
   icon: string;
 
   @ApiProperty({
+    type: Boolean,
+    required: false,
+  })
+  @Prop({ required: false, type: Boolean, default: false })
+  is_stable?: boolean;
+
+  @ApiProperty({
     type: String,
     required: false,
   })

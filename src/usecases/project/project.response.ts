@@ -29,12 +29,27 @@ class UserProjectInvestmentInfo {
   @ApiProperty({
     default: 'USDT',
   })
-  currency?: string;
+  currency: string;
 
   @ApiProperty({
     type: Number,
   })
   token_offered: number;
+
+  @ApiProperty({
+    type: String,
+  })
+  destination_wallet?: string;
+
+  @ApiProperty({
+    type: String,
+  })
+  merkle_root?: string;
+
+  @ApiProperty({
+    type: String,
+  })
+  currency_address?: string;
 }
 
 class ProjectDetailDto {
