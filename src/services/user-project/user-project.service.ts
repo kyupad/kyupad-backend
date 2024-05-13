@@ -3,6 +3,7 @@ import {
   BadRequestException,
   Inject,
   Injectable,
+  InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectConnection, InjectModel } from '@nestjs/mongoose';
@@ -16,6 +17,7 @@ import {
   EProjectStatus,
   EProjectUserAssetType,
   ESnapshotStatus,
+  ETxVerifyStatus,
 } from '@/enums';
 import {
   AssetCatnipInfo,
@@ -27,6 +29,8 @@ import { NftService } from '@/services/nft/nft.service';
 import { ProjectInvestingInfoService } from '../project-investing-info/project-investing-info.service';
 import { FungibleTokensService } from '../fungible-tokens/fungible-tokens.service';
 import { encrypt, getMerkleProof } from '@/helpers';
+import { InvestingHistory } from '@schemas/investing_histories.schema';
+import { SyncInvestingBySignatureInput } from '@usecases/project/project.input';
 
 interface IGlobalCacheHolder {
   last_update_time?: number;
@@ -38,6 +42,8 @@ export class UserProjectService {
   constructor(
     @InjectModel(UserProject.name)
     private readonly userProjectModel: Model<UserProject>,
+    @InjectModel(InvestingHistory.name)
+    private readonly investingHistoryModel: Model<InvestingHistory>,
     @Inject(ProjectService)
     private readonly projectService: ProjectService,
     @Inject(AwsSQSService)
@@ -228,76 +234,97 @@ export class UserProjectService {
       };
     }
 
-    if (info.progress_status === EProjectProgressStatus.INVESTING) {
-      const aggregateUsersProjectTicket =
-        this.projectService.aggregateUsersProjectTicket(
-          info.project_info.id || '',
-          wallet,
-        );
+    if (info.progress_status === EProjectProgressStatus.INVESTING)
+      await this.userProjectInvestingInfo(info, projectInfo, wallet);
+  }
 
-      const projectInvestingInfo = this.projectInvestingInfo.findByProjectId({
-        project_id: info.project_info.id || '',
+  async userProjectInvestingInfo(
+    info: UserProjectRegistrationDto,
+    projectInfo: Project,
+    wallet: string,
+  ): Promise<void> {
+    const aggregateUsersProjectTicket = this.aggregateUsersProjectTicket(
+      info.project_info.id || '',
+      String(info.project_info._id || ''),
+      wallet,
+    );
+
+    const projectInvestingInfo = this.projectInvestingInfo.findByProjectId({
+      project_id: String(info.project_info._id || ''),
+    });
+
+    let tokens = null;
+    if (
+      projectInfo?.price?.currency &&
+      projectInfo?.price?.currency?.toLocaleLowerCase() !== 'sol'
+    ) {
+      tokens = await this.fungibleTokensService.findTokens({
+        address: projectInfo?.price?.currency,
+        is_stable: true,
       });
+      if (!tokens || tokens.length === 0)
+        throw new BadRequestException('Currency not found');
+    }
 
-      let tokens = null;
+    const result = await Promise.all([
+      aggregateUsersProjectTicket,
+      projectInvestingInfo,
+    ]);
+
+    const [userProject, investingInfo] = result;
+    const { total_winner, total_owner_winning_tickets, used_ticket } =
+      userProject;
+
+    info.investment_info = {
+      currency: tokens ? tokens?.[0]?.symbol : projectInfo?.price?.currency,
+      ...(tokens ? { currency_address: tokens?.[0].address } : {}),
+      ticket_size: projectInfo.info?.ticket_size,
+      token_offered: projectInfo.info?.token_offered,
+      total_winner,
+      total_owner_winning_tickets,
+      tickets_used: used_ticket,
+      destination_wallet: investingInfo?.destination_wallet || '',
+    };
+    if (
+      info.investment_info?.total_owner_winning_tickets &&
+      (info.investment_info?.total_owner_winning_tickets || 0) >
+        info.investment_info?.tickets_used
+    ) {
+      let whitelist: string[];
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-expect-error
+      const whitelistCache = global[
+        `project-hd-${String(projectInfo._id)}`
+      ] as IGlobalCacheHolder;
       if (
-        projectInfo?.price?.currency &&
-        projectInfo?.price?.currency?.toLocaleLowerCase() !== 'sol'
+        whitelistCache &&
+        whitelistCache?.last_update_time &&
+        whitelistCache.whitelist &&
+        whitelistCache?.whitelist?.length > 0
       ) {
-        tokens = await this.fungibleTokensService.findTokens({
-          address: projectInfo?.price?.currency,
-          is_stable: true,
-        });
-        if (!tokens || tokens.length === 0)
-          throw new BadRequestException('Currency not found');
-      }
-
-      const result = await Promise.all([
-        aggregateUsersProjectTicket,
-        projectInvestingInfo,
-      ]);
-
-      const [userProject, investingInfo] = result;
-      const { total_winner, total_owner_winning_tickets, used_ticket } =
-        userProject;
-
-      info.investment_info = {
-        currency: tokens ? tokens?.[0]?.symbol : projectInfo?.price?.currency,
-        ...(tokens ? { currency_address: tokens?.[0].address } : {}),
-        ticket_size: projectInfo.info?.ticket_size,
-        token_offered: projectInfo.info?.token_offered,
-        total_winner,
-        total_owner_winning_tickets,
-        tickets_used: used_ticket,
-        destination_wallet: investingInfo?.destination_wallet || '',
-      };
-      if (
-        info.investment_info?.total_owner_winning_tickets &&
-        info.investment_info?.total_owner_winning_tickets >
-          info.investment_info?.tickets_used
-      ) {
-        let whitelist: string[];
+        whitelist = whitelistCache?.whitelist || [];
+      } else {
+        whitelist = investingInfo?.whitelist || [];
         // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-expect-error
-        const whitelistCache = global[
-          `project-hd-${String(projectInfo._id)}`
-        ] as IGlobalCacheHolder;
-        if (
-          whitelistCache &&
-          whitelistCache?.last_update_time &&
-          whitelistCache.whitelist &&
-          whitelistCache?.whitelist?.length > 0
-        ) {
-          whitelist = whitelistCache?.whitelist || [];
-        } else {
-          whitelist = investingInfo?.whitelist || [];
-          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-          // @ts-expect-error
-          global[`project-hd-${String(projectInfo._id)}`] = {
-            last_update_time: new Date().getTime(),
-            whitelist,
-          } as IGlobalCacheHolder;
-        }
+        global[`project-hd-${String(projectInfo._id)}`] = {
+          last_update_time: new Date().getTime(),
+          whitelist,
+        } as IGlobalCacheHolder;
+      }
+      if (
+        (whitelist || []).includes(
+          `${wallet}_${info.investment_info?.total_owner_winning_tickets || 0}`,
+        )
+      )
+        info.investment_info = {
+          ...info.investment_info,
+          is_active: true,
+        };
+      if (
+        info.investment_info?.is_active &&
+        !info.investment_info?.is_invested
+      ) {
         const merkleRoof = getMerkleProof(
           whitelist || [],
           `${wallet}_${info.investment_info?.total_owner_winning_tickets || 0}` ||
@@ -308,6 +335,130 @@ export class UserProjectService {
           process.env.CRYPTO_ENCRYPT_TOKEN as string,
         );
       }
+    } else {
+      info.investment_info = {
+        ...info.investment_info,
+        is_invested: true,
+      };
     }
+  }
+
+  async generateInvestOffChainId(
+    wallet: string,
+    investTotal: number,
+    projectId: string,
+  ): Promise<string> {
+    const result = await this.investingHistoryModel.create({
+      wallet,
+      total: investTotal,
+      project_id: projectId,
+      verify_at: new Date(),
+    });
+    if (!result || !result._id)
+      throw new InternalServerErrorException(
+        'Generate investing info has error',
+      );
+    return result._id;
+  }
+
+  async syncInvestingBySignature(
+    wallet: string,
+    input: SyncInvestingBySignatureInput,
+  ): Promise<void> {
+    try {
+      await this.investingHistoryModel.create({
+        wallet,
+        total: input.total || 1,
+        project_id: input.project__id,
+        verify_at: new Date(),
+        signature: input.signature,
+      });
+    } catch (e) {}
+  }
+
+  async aggregateUsersProjectTicket(
+    projectId: string,
+    project_Id: string,
+    wallet: string,
+  ): Promise<{
+    total_owner_winning_tickets: number;
+    total_winner: number;
+    used_ticket: number;
+  }> {
+    const [myUserProjects, totalTicketUserProject] = await Promise.all([
+      this.userProjectModel.aggregate([
+        {
+          $match: {
+            project_id: projectId,
+            user_id: wallet,
+          },
+        },
+        {
+          $lookup: {
+            from: 'investinghistories',
+            let: { uId: '$user_id' },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $and: [
+                      {
+                        $eq: ['$project_id', project_Id],
+                      },
+                      {
+                        $eq: ['$wallet', '$$uId'],
+                      },
+                      {
+                        $ne: ['$verify_status', ETxVerifyStatus.NOT_VERIFY],
+                      },
+                    ],
+                  },
+                },
+              },
+            ],
+            as: 'investing_history',
+          },
+        },
+        {
+          $project: {
+            _id: 1,
+            total_ticket: 1,
+            project_id: 1,
+            user_id: 1,
+            investing_history: 1,
+          },
+        },
+      ]),
+      this.userProjectModel.countDocuments({
+        project_id: projectId,
+        total_ticket: {
+          $gt: 0,
+        },
+      }),
+    ]);
+    if (!myUserProjects || myUserProjects.length === 0)
+      throw new NotFoundException('User project not found');
+    const myUserProject = myUserProjects[0] as {
+      _id: string;
+      total_ticket: number;
+      project_id: string;
+      user_id: string;
+      investing_history: {
+        _id: string;
+        project_id: string;
+        total: number;
+      }[];
+    };
+    const usedTickets = (myUserProject?.investing_history || []).reduce(
+      (n, { total }) => n + total,
+      0,
+    );
+    return {
+      total_owner_winning_tickets: myUserProject
+        ? myUserProject.total_ticket || 0
+        : 0,
+      total_winner: totalTicketUserProject | 0,
+      used_ticket: usedTickets || 0,
+    };
   }
 }

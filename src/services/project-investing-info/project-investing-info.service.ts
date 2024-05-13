@@ -21,6 +21,8 @@ export class ProjectInvestingInfoService {
     const result = await this.projectInvestingInfoModel.findOne({
       project_id: params.project_id,
     });
-    return result;
+    if (!result)
+      throw new BadRequestException('Project investing info not found');
+    return JSON.parse(JSON.stringify(result)) as ProjectInvestingInfo;
   }
 }

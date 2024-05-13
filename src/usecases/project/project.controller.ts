@@ -37,10 +37,16 @@ import { UserProjectService } from '@/services/user-project/user-project.service
 import { plainToInstance } from 'class-transformer';
 import { Project } from '@schemas/project.schema';
 import {
+  GenerateInvestingOffChainIdResponse,
   ProjectDetailResponse,
   UserProjectRegistrationResponse,
 } from '@usecases/project/project.response';
-import { UserRegistrationQuery } from '@usecases/project/project.input';
+import {
+  GenerateInvestingIdInput,
+  SyncInvestingBySignatureInput,
+  UserRegistrationQuery,
+} from '@usecases/project/project.input';
+import { DefaultResponse } from '@/interfaces/common.interface';
 
 @Controller()
 @ApiTags('project')
@@ -247,6 +253,58 @@ export class ProjectController {
     return {
       statusCode: HttpStatus.OK,
       data: projectRegistrationInfo,
+    };
+  }
+
+  // @Post('/generate-investing-id')
+  // @ApiOkResponse({ type: GenerateInvestingOffChainIdResponse })
+  // @ApiUnauthorizedResponse({ description: 'Unauthorized' })
+  // @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
+  // async generateInvestOffChainId(
+  //   @Body() input: GenerateInvestingIdInput,
+  // ): Promise<GenerateInvestingOffChainIdResponse> {
+  //   const accessToken = this.cls.get('accessToken');
+  //   let wallet;
+  //
+  //   if (accessToken) {
+  //     const userInfo = this.jwtService.decode(accessToken) as any;
+  //     wallet = userInfo?.sub;
+  //   }
+  //   if (!wallet) throw new UnauthorizedException();
+  //   const id = await this.userProjectService.generateInvestOffChainId(
+  //     wallet,
+  //     input.invest_total,
+  //     input.project_id,
+  //   );
+  //   return {
+  //     statusCode: HttpStatus.OK,
+  //     data: {
+  //       id,
+  //     },
+  //   };
+  // }
+
+  @Post('/sync-investing-by-signature')
+  @ApiOkResponse({ type: DefaultResponse })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized' })
+  @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
+  async syncInvestingBySignature(
+    @Body() input: SyncInvestingBySignatureInput,
+  ): Promise<DefaultResponse> {
+    const accessToken = this.cls.get('accessToken');
+    let wallet;
+
+    if (accessToken) {
+      const userInfo = this.jwtService.decode(accessToken) as any;
+      wallet = userInfo?.sub;
+    }
+    if (!wallet) throw new UnauthorizedException();
+    await this.userProjectService.syncInvestingBySignature(wallet, input);
+    return {
+      statusCode: HttpStatus.OK,
+      data: {
+        status: 'SUCCESS',
+      },
     };
   }
 }

@@ -55,6 +55,16 @@ class UserProjectInvestmentInfo {
     type: String,
   })
   merkle_proof?: string;
+
+  @ApiProperty({
+    type: Boolean,
+  })
+  is_active?: boolean;
+
+  @ApiProperty({
+    type: Boolean,
+  })
+  is_invested?: boolean;
 }
 
 class ProjectDetailDto {
@@ -183,6 +193,19 @@ class UserProjectRegistrationResponse extends withBaseResponse(
   {},
 ) {}
 
+class GenerateInvestingOffChainIdDto {
+  @ApiProperty({
+    type: String,
+    required: true,
+  })
+  id: string;
+}
+
+class GenerateInvestingOffChainIdResponse extends withBaseResponse(
+  GenerateInvestingOffChainIdDto,
+  {},
+) {}
+
 export {
   ProjectDetailResponse,
   ProjectDetailDto,
@@ -190,4 +213,6 @@ export {
   UserProjectRegistrationResponse,
   AssetCatnipInfo,
   AssetCatnipInfoChild,
+  GenerateInvestingOffChainIdResponse,
+  GenerateInvestingOffChainIdDto,
 };
