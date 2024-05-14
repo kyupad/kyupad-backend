@@ -483,26 +483,34 @@ export class UserProjectService {
       try {
         const logs = transaction.meta?.logMessages;
         if (logs && logs.length > 6) {
-          const investInfo = logs[6].replace('Program log: ', '');
-          const investInfoArr = investInfo.split('_');
-          if (investInfoArr.length > 1) {
-            const projectId = investInfoArr[0];
-            const total = investInfoArr[1];
-            const owner = transaction.transaction?.message?.accountKeys[0];
-            signature = transaction.transaction?.signatures[0];
-            bulkData.push({
-              updateOne: {
-                filter: { signature },
-                update: {
-                  project_id: projectId,
-                  wallet: owner,
-                  total,
-                  verify_status: ETxVerifyStatus.TX_WEB_HOOK_VERIFY,
-                  verify_at: new Date(),
+          const investInfoLog = logs.filter(
+            (log) => log.indexOf('Program log: invest_') === 0,
+          );
+          if (investInfoLog && investInfoLog.length > 0) {
+            const investInfo = investInfoLog[0].replace(
+              'Program log: invest_',
+              '',
+            );
+            const investInfoArr = investInfo.split('_');
+            if (investInfoArr.length > 1) {
+              const projectId = investInfoArr[0];
+              const total = investInfoArr[1];
+              const owner = transaction.transaction?.message?.accountKeys[0];
+              signature = transaction.transaction?.signatures[0];
+              bulkData.push({
+                updateOne: {
+                  filter: { signature },
+                  update: {
+                    project_id: projectId,
+                    wallet: owner,
+                    total,
+                    verify_status: ETxVerifyStatus.TX_WEB_HOOK_VERIFY,
+                    verify_at: new Date(),
+                  },
+                  upsert: true,
                 },
-                upsert: true,
-              },
-            });
+              });
+            }
           }
         }
       } catch (e) {
@@ -511,6 +519,8 @@ export class UserProjectService {
         );
       }
     });
-    await this.investingHistoryModel.bulkWrite(bulkData);
+    if (bulkData.length > 0) {
+      await this.investingHistoryModel.bulkWrite(bulkData);
+    }
   }
 }
