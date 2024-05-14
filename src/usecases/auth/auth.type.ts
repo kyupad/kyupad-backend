@@ -2,21 +2,12 @@ import { withBaseResponse } from '@/interfaces/common.interface';
 import { ApiProperty } from '@nestjs/swagger';
 
 class SigninDataResult {
-  @ApiProperty({ default: 'dev.kyupad.xyz' })
-  domain: string;
-  @ApiProperty({
-    default:
-      'Clicking Sign or Approve only means you have proved this wallet is owned by you. This request will not trigger any blockchain transaction or cost any gas fee.',
-  })
-  statement: string;
-  @ApiProperty({ default: '1' })
-  version: string;
-  @ApiProperty({ default: '67f4b4a0e1aab6ab41cd90efba2f5e14' })
-  nonce: string;
-  @ApiProperty({ default: 'testnet' })
-  chainId: string;
-  @ApiProperty({ default: '2024-04-09T08:38:41.318Z' })
-  issuedAt: string;
+  @ApiProperty()
+  message: string;
+}
+
+class SigninDataParams {
+  publicKey: string;
 }
 
 class SigninDataResponse extends withBaseResponse(SigninDataResult) {}
@@ -41,6 +32,17 @@ class VerifySIWSBody {
   input: SigninDataResult;
   @ApiProperty()
   output: SigninDataOutput;
+}
+
+class VerifyBody {
+  @ApiProperty()
+  message: string;
+  @ApiProperty()
+  signature: string;
+  @ApiProperty()
+  publicKey: string;
+  @ApiProperty({ type: 'string', enum: ['solana', 'ethereum', 'bsc'] })
+  network: 'solana' | 'ethereum' | 'bsc';
 }
 
 class VerifySIWSResult {
@@ -72,4 +74,6 @@ export {
   VerifySIWSBody,
   VerifySIWSResponse,
   RefreshBody,
+  VerifyBody,
+  SigninDataParams,
 };

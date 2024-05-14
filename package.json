@@ -43,8 +43,6 @@
     "@nestjs/swagger": "^7.3.1",
     "@nestjs/terminus": "^10.2.3",
     "@nestjs/throttler": "^5.1.2",
-    "@solana/wallet-standard-features": "^1.2.0",
-    "@solana/wallet-standard-util": "^1.1.1",
     "@solana/web3.js": "^1.91.1",
     "axios": "^1.6.7",
     "bs58": "^5.0.0",
@@ -61,6 +59,7 @@
     "nestjs-cls": "^4.3.0",
     "reflect-metadata": "^0.2.0",
     "rxjs": "^7.8.1",
+    "tweetnacl": "^1.0.3",
     "uuid": "^9.0.1"
   },
   "devDependencies": {
