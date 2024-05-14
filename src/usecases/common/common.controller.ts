@@ -13,7 +13,8 @@ import { HeliusEventHook } from '@/services/helius/helius.response';
 @Controller()
 @ApiTags('common')
 export class CommonController {
-  constructor(private readonly nftService: NftService) {}
+  constructor(private readonly nftService: NftService) {
+  }
 
   @Post('/helius/webhook')
   @ApiOkResponse({
@@ -29,6 +30,25 @@ export class CommonController {
       data,
       req.headers['authorization'],
     );
+    return {
+      statusCode: 200,
+      data: {
+        status: 'SUCCESS',
+      },
+    };
+  }
+
+  @Post('/helius/ido-webhook')
+  @ApiOkResponse({
+    type: MintingPoolRoundResponse,
+  })
+  @ApiBadRequestResponse({ description: 'Bad Request' })
+  @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
+  async idoWebHook(
+    @Body() data: any[],
+    // @Req() req: any,
+  ): Promise<DefaultResponse> {
+    console.log('idoWebHook', JSON.stringify(data));
     return {
       statusCode: 200,
       data: {
