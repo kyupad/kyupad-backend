@@ -33,6 +33,16 @@ enum EProjectUserAssetType {
   NFT = 'nft',
 }
 
+enum EPUserStatus {
+  REGISTRATION_PROCESSING = 'registration_processing',
+  RAFFLE_ROUND_SETTING = 'raffle_round_setting',
+  PROJECT_RAFFLE_PROCESSING = 'project_raffle_processing',
+  PROJECT_INVESTMENT_SETTING_PROCESSING = 'project_investment_setting_processing',
+  PROJECT_INVESTMENT_SETTING_SUCCESSFUL = 'project_investment_setting_successful',
+  PROJECT_VESTING_SETTING_PROCESSING = 'project_vesting_setting_processing',
+  PROJECT_VESTING_SETTING_SUCCESSFUL = 'project_vesting_setting_successful',
+}
+
 export {
   EProjectType,
   EProjectSalePool,
@@ -40,4 +50,5 @@ export {
   EProjectStatus,
   EProjectProgressStatus,
   EProjectUserAssetType,
+  EPUserStatus,
 };

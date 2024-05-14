@@ -5,7 +5,7 @@ import mongoose, { HydratedDocument } from 'mongoose';
 import utc from 'dayjs/plugin/utc';
 import { v4 as uuidv4 } from 'uuid';
 import { Exclude, Expose, Transform } from 'class-transformer';
-import { EProjectSalePool, EProjectStatus, EProjectVestingType } from '@/enums';
+import { EProjectSalePool, EProjectStatus, EProjectVestingType, EPUserStatus } from '@/enums';
 import 'reflect-metadata';
 
 dayjs.extend(utc);
@@ -248,6 +248,12 @@ export class Project {
     default: EProjectStatus.COLLECTION_PRICE_SNAPSHOT_PROCESSING,
   })
   status?: EProjectStatus;
+
+  @Prop({
+    type: String,
+    default: EPUserStatus.REGISTRATION_PROCESSING,
+  })
+  p_user_status?: EPUserStatus;
 
   @Exclude()
   registration_start_at_diff?: number;

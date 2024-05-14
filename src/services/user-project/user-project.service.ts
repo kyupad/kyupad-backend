@@ -16,6 +16,7 @@ import {
   EProjectProgressStatus,
   EProjectStatus,
   EProjectUserAssetType,
+  EPUserStatus,
   ESnapshotStatus,
   ETxVerifyStatus,
 } from '@/enums';
@@ -120,7 +121,7 @@ export class UserProjectService {
       {
         status: EProjectStatus.ACTIVE,
       },
-      { timeline: 1, id: 1, info: 1, status: 1, price: 1 },
+      { timeline: 1, id: 1, info: 1, status: 1, price: 1, p_user_status: 1 },
     );
     const projectInfo = JSON.parse(JSON.stringify(project)) as Project;
     const result: UserProjectRegistrationDto = {
@@ -286,60 +287,65 @@ export class UserProjectService {
       destination_wallet: investingInfo?.destination_wallet || '',
     };
     if (
-      info.investment_info?.total_owner_winning_tickets &&
-      (info.investment_info?.total_owner_winning_tickets || 0) >
-        info.investment_info?.tickets_used
+      projectInfo.p_user_status ===
+      EPUserStatus.PROJECT_INVESTMENT_SETTING_SUCCESSFUL
     ) {
-      let whitelist: string[];
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      // @ts-expect-error
-      const whitelistCache = global[
-        `project-hd-${String(projectInfo._id)}`
-      ] as IGlobalCacheHolder;
       if (
-        whitelistCache &&
-        whitelistCache?.last_update_time &&
-        whitelistCache.whitelist &&
-        whitelistCache?.whitelist?.length > 0
+        info.investment_info?.total_owner_winning_tickets &&
+        (info.investment_info?.total_owner_winning_tickets || 0) >
+          info.investment_info?.tickets_used
       ) {
-        whitelist = whitelistCache?.whitelist || [];
-      } else {
-        whitelist = investingInfo?.whitelist || [];
+        let whitelist: string[];
         // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-expect-error
-        global[`project-hd-${String(projectInfo._id)}`] = {
-          last_update_time: new Date().getTime(),
-          whitelist,
-        } as IGlobalCacheHolder;
-      }
-      if (
-        (whitelist || []).includes(
-          `${wallet}_${info.investment_info?.total_owner_winning_tickets || 0}`,
+        const whitelistCache = global[
+          `project-hd-${String(projectInfo._id)}`
+        ] as IGlobalCacheHolder;
+        if (
+          whitelistCache &&
+          whitelistCache?.last_update_time &&
+          whitelistCache.whitelist &&
+          whitelistCache?.whitelist?.length > 0
+        ) {
+          whitelist = whitelistCache?.whitelist || [];
+        } else {
+          whitelist = investingInfo?.whitelist || [];
+          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+          // @ts-expect-error
+          global[`project-hd-${String(projectInfo._id)}`] = {
+            last_update_time: new Date().getTime(),
+            whitelist,
+          } as IGlobalCacheHolder;
+        }
+        if (
+          (whitelist || []).includes(
+            `${wallet}_${info.investment_info?.total_owner_winning_tickets || 0}`,
+          )
         )
-      )
+          info.investment_info = {
+            ...info.investment_info,
+            is_active: true,
+          };
+        if (
+          info.investment_info?.is_active &&
+          !info.investment_info?.is_invested
+        ) {
+          const merkleRoof = getMerkleProof(
+            whitelist || [],
+            `${wallet}_${info.investment_info?.total_owner_winning_tickets || 0}` ||
+              '',
+          );
+          info.investment_info.merkle_proof = encrypt(
+            JSON.stringify(merkleRoof),
+            process.env.CRYPTO_ENCRYPT_TOKEN as string,
+          );
+        }
+      } else {
         info.investment_info = {
           ...info.investment_info,
-          is_active: true,
+          is_invested: true,
         };
-      if (
-        info.investment_info?.is_active &&
-        !info.investment_info?.is_invested
-      ) {
-        const merkleRoof = getMerkleProof(
-          whitelist || [],
-          `${wallet}_${info.investment_info?.total_owner_winning_tickets || 0}` ||
-            '',
-        );
-        info.investment_info.merkle_proof = encrypt(
-          JSON.stringify(merkleRoof),
-          process.env.CRYPTO_ENCRYPT_TOKEN as string,
-        );
       }
-    } else {
-      info.investment_info = {
-        ...info.investment_info,
-        is_invested: true,
-      };
     }
   }
 
