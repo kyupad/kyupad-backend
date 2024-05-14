@@ -1,5 +1,5 @@
-import { CHAIN_ID } from '@/constants';
 import {
+  BadRequestException,
   Body,
   ConflictException,
   Controller,
@@ -8,15 +8,16 @@ import {
   HttpStatus,
   Logger,
   Post,
+  Query,
   UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import crypto from 'crypto';
 import {
   RefreshBody,
+  SigninDataParams,
   SigninDataResponse,
-  SigninDataResult,
-  VerifySIWSBody,
+  VerifyBody,
   VerifySIWSResponse,
 } from './auth.type';
 import {
@@ -26,15 +27,16 @@ import {
   ApiInternalServerErrorResponse,
   ApiOkResponse,
   ApiOperation,
+  ApiParam,
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import bs58 from 'bs58';
-import { verifySignIn } from '@solana/wallet-standard-util';
 import { JwtService } from '@nestjs/jwt';
-import { SolanaSignInOutput } from '@solana/wallet-standard-features';
 import { UserService } from '@/services/user/user.service';
 import { isEmpty } from '@/helpers';
+import nacl from 'tweetnacl';
+import { PublicKey } from '@solana/web3.js';
 
 @Controller()
 @ApiTags('auth')
@@ -64,94 +66,29 @@ export class AuthController {
   @ApiOperation({ summary: 'Get signin data payload' })
   @ApiOkResponse({ type: SigninDataResponse })
   @ApiInternalServerErrorResponse({ description: 'Internal server error' })
-  signinData(): SigninDataResponse {
+  @ApiParam({ name: 'publicKey', required: true, type: 'string' })
+  signinData(@Query() params: SigninDataParams): SigninDataResponse {
+    if (!params?.publicKey) {
+      throw new BadRequestException('public key is required');
+    }
+
     const now: Date = new Date();
     const currentUrl = new URL(this.WEB_URL);
     const domain = currentUrl.host;
     const nonce = crypto.randomBytes(16).toString('hex');
 
-    // Convert the Date object to a string
     const currentDateTime = now.toISOString();
-    const signInData: SigninDataResult = {
-      domain,
-      statement:
-        'Clicking Sign or Approve only means you have proved this wallet is owned by you. This request will not trigger any blockchain transaction or cost any gas fee.',
-      version: '1',
-      nonce,
-      chainId: this.CHAIN_ID,
-      issuedAt: currentDateTime,
-    };
 
-    return { data: signInData, statusCode: 200 };
-  }
+    const signInData = `${domain} wants you to signin with your account: ${params.publicKey}.
 
-  @Post('verify-siws')
-  @ApiBody({ type: VerifySIWSBody })
-  @ApiCreatedResponse({ type: VerifySIWSResponse })
-  @ApiOperation({ summary: 'Verify sign in with Solana' })
-  @ApiUnauthorizedResponse({ description: 'Unauthorized' })
-  @ApiInternalServerErrorResponse({ description: 'Internal server error' })
-  @ApiConflictResponse({ description: 'Conflict' })
-  async verifySignInWithSolana(
-    @Body() body: VerifySIWSBody,
-  ): Promise<VerifySIWSResponse> {
-    if (isEmpty(body.input)) {
-      throw new UnauthorizedException('signin input is required');
-    }
+Clicking Sign or Approve only means you have proved this wallet is owned by you. This request will not trigger any blockchain transaction or cost any gas fee.
 
-    if (!body.output.account.publicKey) {
-      throw new UnauthorizedException('public key is required');
-    }
+Version: 1
+Chain ID: ${this.CHAIN_ID}
+Nonce: ${nonce}
+Issued At: ${currentDateTime}`;
 
-    if (!body.output.signature) {
-      throw new UnauthorizedException('signature is required');
-    }
-
-    if (!body.output.signedMessage) {
-      throw new UnauthorizedException('signed message is required');
-    }
-
-    const decodedOutput: SolanaSignInOutput = {
-      account: {
-        publicKey: new Uint8Array(
-          bs58.decode(body.output.account.publicKey as any),
-        ),
-      } as any,
-      signature: new Uint8Array(bs58.decode(body.output.signature as any)),
-      signedMessage: new Uint8Array(
-        bs58.decode(body.output.signedMessage as any),
-      ),
-      signatureType: body.output.signatureType,
-    };
-
-    if (!verifySignIn(body.input, decodedOutput)) {
-      throw new UnauthorizedException('Sign In verification failed!');
-    }
-
-    const payload = { sub: body.output.account.publicKey };
-
-    try {
-      await this.userService.upsert({
-        id: body.output.account.publicKey,
-      });
-    } catch (e) {
-      this.logger.error(e.message);
-      throw new ConflictException('Failed to register user');
-    }
-
-    return {
-      data: {
-        access_token: await this.jwtService.signAsync(payload, {
-          expiresIn: '5m',
-          secret: this.JWT_ACCESS_TOKEN_SECRET,
-        }),
-        refresh_token: await this.jwtService.signAsync(payload, {
-          expiresIn: '7d',
-          secret: this.JWT_REFRESH_TOKEN_SECRET,
-        }),
-      },
-      statusCode: HttpStatus.CREATED,
-    };
+    return { data: { message: signInData }, statusCode: 200 };
   }
 
   @Post('refresh')
@@ -194,5 +131,71 @@ export class AuthController {
     } catch {
       throw new UnauthorizedException('Invalid refresh token');
     }
+  }
+
+  @Post('verify')
+  @ApiBody({ type: VerifyBody })
+  @ApiCreatedResponse({ type: VerifySIWSResponse })
+  @ApiOperation({ summary: 'Verify Sign In' })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized' })
+  @ApiInternalServerErrorResponse({ description: 'Internal server error' })
+  @ApiConflictResponse({ description: 'Conflict' })
+  async verifySignIn(@Body() body: VerifyBody): Promise<VerifySIWSResponse> {
+    if (isEmpty(body)) {
+      throw new UnauthorizedException('signin input is required');
+    }
+
+    if (!body?.publicKey) {
+      throw new UnauthorizedException('public key is required');
+    }
+
+    if (!body?.signature) {
+      throw new UnauthorizedException('signature is required');
+    }
+
+    if (!body?.message) {
+      throw new UnauthorizedException('message is required');
+    }
+
+    if (!body?.network) {
+      throw new UnauthorizedException('network is required');
+    }
+
+    const encodedMessage = new TextEncoder().encode(body.message);
+
+    const verified = nacl.sign.detached.verify(
+      encodedMessage,
+      bs58.decode(body.signature),
+      new Uint8Array(new PublicKey(body.publicKey).toBuffer()),
+    );
+
+    if (!verified) {
+      throw new UnauthorizedException('Sign In verification failed!');
+    }
+
+    const payload = { sub: body.publicKey };
+
+    try {
+      await this.userService.upsert({
+        id: `${body.network}:${body.publicKey}`,
+      });
+    } catch (e) {
+      this.logger.error(e.message);
+      throw new ConflictException('Failed to register user');
+    }
+
+    return {
+      data: {
+        access_token: await this.jwtService.signAsync(payload, {
+          expiresIn: '5m',
+          secret: this.JWT_ACCESS_TOKEN_SECRET,
+        }),
+        refresh_token: await this.jwtService.signAsync(payload, {
+          expiresIn: '7d',
+          secret: this.JWT_REFRESH_TOKEN_SECRET,
+        }),
+      },
+      statusCode: HttpStatus.CREATED,
+    };
   }
 }
