@@ -24,7 +24,10 @@ import {
   GenerateCnftMetadataResult,
 } from '@/usecases/nft/nft.type';
 import { KyupadNft } from '@schemas/kyupad_nft.schema';
-import { HeliusEventHook } from '@/services/helius/helius.response';
+import {
+  HeliusEventHook,
+  HeliusIDOTxRawHook,
+} from '@/services/helius/helius.response';
 import { HeliusService } from '@/services/helius/helius.service';
 import { AppsyncService } from '@/services/aws/appsync/appsync.service';
 import { AppsyncNftActionInput } from '@/services/nft/nft.input';

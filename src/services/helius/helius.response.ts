@@ -51,4 +51,41 @@ class HeliusEventCompressed {
   updateArgs: any;
 }
 
-export { HeliusEventHook, HeliusEventCompressed, THeliusEvent };
+class HeliusIDOTxRawMeta {
+  err?: any;
+
+  fee: number;
+
+  logMessages: string[];
+}
+
+class HeliusIDOTxRawTransaction {
+  message: {
+    accountKeys: string[];
+  };
+
+  signatures: string[];
+}
+
+class HeliusIDOTxRawHook {
+  blockTime: number;
+
+  indexWithinBlock: number;
+
+  meta: HeliusIDOTxRawMeta;
+
+  slot: number;
+
+  transaction: HeliusIDOTxRawTransaction;
+
+  version: string;
+}
+
+export {
+  HeliusEventHook,
+  HeliusEventCompressed,
+  THeliusEvent,
+  HeliusIDOTxRawHook,
+  HeliusIDOTxRawMeta,
+  HeliusIDOTxRawTransaction,
+};

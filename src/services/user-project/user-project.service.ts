@@ -4,10 +4,11 @@ import {
   Inject,
   Injectable,
   InternalServerErrorException,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectConnection, InjectModel } from '@nestjs/mongoose';
-import mongoose, { Model } from 'mongoose';
+import mongoose, { AnyBulkWriteOperation, Model } from 'mongoose';
 import { AwsSQSService } from '@/services/aws/sqs/sqs.service';
 import { ProjectService } from '@/services/project/project.service';
 import { ICatnipAssetsSnapshotBody } from '@/services/project/project.input';
@@ -32,6 +33,7 @@ import { FungibleTokensService } from '../fungible-tokens/fungible-tokens.servic
 import { encrypt, getMerkleProof } from '@/helpers';
 import { InvestingHistory } from '@schemas/investing_histories.schema';
 import { SyncInvestingBySignatureInput } from '@usecases/project/project.input';
+import { HeliusIDOTxRawHook } from '@/services/helius/helius.response';
 
 interface IGlobalCacheHolder {
   last_update_time?: number;
@@ -40,6 +42,8 @@ interface IGlobalCacheHolder {
 
 @Injectable()
 export class UserProjectService {
+  private logger = new Logger(ProjectService.name);
+
   constructor(
     @InjectModel(UserProject.name)
     private readonly userProjectModel: Model<UserProject>,
@@ -466,5 +470,47 @@ export class UserProjectService {
       total_winner: totalTicketUserProject | 0,
       used_ticket: usedTickets || 0,
     };
+  }
+
+  async syncInvestingFromHook(
+    transactions: HeliusIDOTxRawHook[],
+    authorization: string,
+  ): Promise<void> {
+    if (authorization !== process.env.HELIUS_WEBHOOK_TOKEN) return;
+    const bulkData: AnyBulkWriteOperation<InvestingHistory>[] = [];
+    transactions.forEach((transaction) => {
+      let signature = 'UNKNOWN';
+      try {
+        const logs = transaction.meta?.logMessages;
+        if (logs && logs.length > 6) {
+          const investInfo = logs[6].replace('Program log: ', '');
+          const investInfoArr = investInfo.split('_');
+          if (investInfoArr.length > 1) {
+            const projectId = investInfoArr[0];
+            const total = investInfoArr[1];
+            const owner = transaction.transaction?.message?.accountKeys[0];
+            signature = transaction.transaction?.signatures[0];
+            bulkData.push({
+              updateOne: {
+                filter: { signature },
+                update: {
+                  project_id: projectId,
+                  wallet: owner,
+                  total,
+                  verify_status: ETxVerifyStatus.TX_WEB_HOOK_VERIFY,
+                  verify_at: new Date(),
+                },
+                upsert: true,
+              },
+            });
+          }
+        }
+      } catch (e) {
+        this.logger.error(
+          `Cannot sync [IDO] of signature [${signature}] ${e.stack}`,
+        );
+      }
+    });
+    await this.investingHistoryModel.bulkWrite(bulkData);
   }
 }

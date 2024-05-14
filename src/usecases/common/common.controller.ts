@@ -8,13 +8,19 @@ import {
 import { MintingPoolRoundResponse } from '@usecases/nft/nft.response';
 import { DefaultResponse } from '@/interfaces/common.interface';
 import { NftService } from '@/services/nft/nft.service';
-import { HeliusEventHook } from '@/services/helius/helius.response';
+import {
+  HeliusEventHook,
+  HeliusIDOTxRawHook,
+} from '@/services/helius/helius.response';
+import { UserProjectService } from '@/services/user-project/user-project.service';
 
 @Controller()
 @ApiTags('common')
 export class CommonController {
-  constructor(private readonly nftService: NftService) {
-  }
+  constructor(
+    private readonly nftService: NftService,
+    private readonly userProjectService: UserProjectService,
+  ) {}
 
   @Post('/helius/webhook')
   @ApiOkResponse({
@@ -45,10 +51,13 @@ export class CommonController {
   @ApiBadRequestResponse({ description: 'Bad Request' })
   @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
   async idoWebHook(
-    @Body() data: any[],
-    // @Req() req: any,
+    @Body() data: HeliusIDOTxRawHook[],
+    @Req() req: any,
   ): Promise<DefaultResponse> {
-    console.log('idoWebHook', JSON.stringify(data));
+    await this.userProjectService.syncInvestingFromHook(
+      data,
+      req.headers['authorization'],
+    );
     return {
       statusCode: 200,
       data: {
