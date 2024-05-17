@@ -33,43 +33,66 @@ export class ProjectService {
     return result;
   }
 
-  async listUpcoming(params: {
+  async listFurture(params: {
     limit?: number;
     page?: number;
   }): Promise<{ data: Project[]; totalCount: number }> {
-    const perPage = Number(params?.limit) || 4;
+    const perPage = Number(params?.limit) || 3;
     const page = params?.page || 1;
 
     const result = await this.projectModel.aggregate([
       {
         $match: {
+          'timeline.registration_start_at': { $lte: dayjs.utc().toDate() },
           'timeline.investment_end_at': { $gte: dayjs.utc().toDate() },
           status: EProjectStatus.ACTIVE,
         },
       },
-      {
-        $addFields: {
-          registration_start_at_diff: {
-            $cond: {
-              if: {
-                $gt: ['$timeline.registration_start_at', dayjs.utc().toDate()],
-              },
-              then: {
-                $subtract: [
-                  '$timeline.registration_start_at',
-                  dayjs.utc().toDate(),
-                ],
-              },
-              else: Number.MAX_SAFE_INTEGER,
-            },
-          },
-        },
-      },
+
       {
         $facet: {
           totalCount: [{ $count: 'count' }],
           data: [
-            { $sort: { registration_start_at_diff: 1 } },
+            { $sort: { 'timeline.registration_start_at': 1 } },
+            { $skip: perPage * page - perPage },
+            { $limit: perPage },
+          ],
+        },
+      },
+      {
+        $unwind: '$totalCount',
+      },
+      {
+        $project: {
+          totalCount: '$totalCount.count',
+          data: 1,
+        },
+      },
+    ]);
+
+    return result?.[0] || [];
+  }
+
+  async listUpcoming(params: {
+    limit?: number;
+    page?: number;
+  }): Promise<{ data: Project[]; totalCount: number }> {
+    const perPage = Number(params?.limit) || 3;
+    const page = params?.page || 1;
+
+    const result = await this.projectModel.aggregate([
+      {
+        $match: {
+          'timeline.registration_start_at': { $gt: dayjs.utc().toDate() },
+          status: EProjectStatus.ACTIVE,
+        },
+      },
+
+      {
+        $facet: {
+          totalCount: [{ $count: 'count' }],
+          data: [
+            { $sort: { 'timeline.registration_start_at': 1 } },
             { $skip: perPage * page - perPage },
             { $limit: perPage },
           ],
@@ -104,28 +127,10 @@ export class ProjectService {
         },
       },
       {
-        $addFields: {
-          registration_start_at_diff: {
-            $cond: {
-              if: {
-                $gt: ['$timeline.registration_start_at', dayjs.utc().toDate()],
-              },
-              then: {
-                $subtract: [
-                  '$timeline.registration_start_at',
-                  dayjs.utc().toDate(),
-                ],
-              },
-              else: Number.MAX_SAFE_INTEGER,
-            },
-          },
-        },
-      },
-      {
         $facet: {
           totalCount: [{ $count: 'count' }],
           data: [
-            { $sort: { registration_start_at_diff: 1 } },
+            { $sort: { 'timeline.investment_end_at': -1 } },
             { $skip: perPage * page - perPage },
             { $limit: perPage },
           ],

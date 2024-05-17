@@ -1,6 +1,7 @@
 enum EProjectType {
   'upcoming' = 'upcoming',
   'success' = 'success',
+  'furture' = 'furture',
 }
 
 enum EProjectSalePool {

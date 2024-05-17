@@ -37,12 +37,10 @@ import { UserProjectService } from '@/services/user-project/user-project.service
 import { plainToInstance } from 'class-transformer';
 import { Project } from '@schemas/project.schema';
 import {
-  GenerateInvestingOffChainIdResponse,
   ProjectDetailResponse,
   UserProjectRegistrationResponse,
 } from '@usecases/project/project.response';
 import {
-  GenerateInvestingIdInput,
   SyncInvestingBySignatureInput,
   UserRegistrationQuery,
 } from '@usecases/project/project.input';
@@ -75,9 +73,33 @@ export class ProjectController {
 
     if (
       query?.type !== EProjectType.success &&
-      query?.type !== EProjectType.upcoming
+      query?.type !== EProjectType.upcoming &&
+      query?.type !== EProjectType.furture
     ) {
       throw new BadRequestException('type is invalid');
+    }
+
+    if (query?.type === EProjectType.furture) {
+      const furture = await this.projectService.listFurture({
+        limit: query?.limit,
+        page: query?.page,
+      });
+
+      const r = [...JSON.parse(JSON.stringify(furture?.data || []))];
+      const result = plainToInstance(
+        Project,
+        r,
+      ) as unknown as ListProjectResult[];
+      return {
+        statusCode: 200,
+        data: {
+          projects: result,
+          pagination: {
+            total: Math.ceil(furture.totalCount / (query?.limit || 3)),
+            page: Number(query?.page) || 1,
+          },
+        },
+      };
     }
 
     if (query?.type === EProjectType.success) {
@@ -120,7 +142,7 @@ export class ProjectController {
         data: {
           projects: result,
           pagination: {
-            total: Math.ceil(upcoming.totalCount / (query?.limit || 4)),
+            total: Math.ceil(upcoming.totalCount / (query?.limit || 3)),
             page: Number(query?.page) || 1,
           },
         },
