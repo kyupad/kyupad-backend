@@ -95,7 +95,7 @@ export class ProjectController {
         data: {
           projects: result,
           pagination: {
-            total: Math.ceil(furture.totalCount / (query?.limit || 3)),
+            total: Math.ceil(furture.totalCount / (query?.limit || 1)),
             page: Number(query?.page) || 1,
           },
         },

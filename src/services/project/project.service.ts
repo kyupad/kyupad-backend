@@ -1,5 +1,5 @@
 import { Project, Timeline } from '@/schemas/project.schema';
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectConnection, InjectModel } from '@nestjs/mongoose';
 import mongoose, { FilterQuery, Model } from 'mongoose';
 import dayjs from 'dayjs';
@@ -9,6 +9,7 @@ import { EProjectProgressStatus, EProjectStatus } from '@/enums';
 import { ProjectDetailDto } from '@usecases/project/project.response';
 import { plainToInstance } from 'class-transformer';
 import { UsesProjectAssets } from '@/services/user-project/user-project.response';
+import { FungibleTokensService } from '../fungible-tokens/fungible-tokens.service';
 
 dayjs.extend(utc);
 
@@ -21,6 +22,8 @@ export class ProjectService {
     @InjectModel(UserProject.name)
     private readonly userProjectModel: Model<UserProject>,
     @InjectConnection() private readonly connection: mongoose.Connection,
+    @Inject(FungibleTokensService)
+    private readonly fungibleTokensService: FungibleTokensService,
   ) {}
 
   async create(project: Project): Promise<Project> {
@@ -186,11 +189,30 @@ export class ProjectService {
       status: EProjectStatus.ACTIVE,
     });
     if (!project) throw new NotFoundException('Project not found');
+
     const projectInfo = JSON.parse(JSON.stringify(project)) as Project;
     const projectDetail: ProjectDetailDto = {
       project: plainToInstance(Project, JSON.parse(JSON.stringify(project))),
       progress_status: this.getProjectProgressStatus(projectInfo.timeline),
     };
+
+    let tokens = null;
+    if (
+      projectInfo?.price?.currency &&
+      projectInfo?.price?.currency?.toLocaleLowerCase() !== 'sol'
+    ) {
+      tokens = await this.fungibleTokensService.findTokens({
+        address: projectInfo?.price?.currency,
+        // is_stable: true, FIXME: is_stable MUST be true
+      });
+    }
+
+    projectDetail.project.price = {
+      ...projectInfo.price,
+      currency: tokens ? tokens?.[0]?.symbol : projectInfo?.price?.currency,
+      ...(tokens ? { currency_address: tokens?.[0].address } : {}),
+    };
+
     if (wallet) {
       const [myUserProject, aggregateUserRegisterProjectResult] =
         await Promise.all([

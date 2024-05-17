@@ -5,7 +5,12 @@ import mongoose, { HydratedDocument } from 'mongoose';
 import utc from 'dayjs/plugin/utc';
 import { v4 as uuidv4 } from 'uuid';
 import { Exclude, Expose, Transform } from 'class-transformer';
-import { EProjectSalePool, EProjectStatus, EProjectVestingType, EPUserStatus } from '@/enums';
+import {
+  EProjectSalePool,
+  EProjectStatus,
+  EProjectVestingType,
+  EPUserStatus,
+} from '@/enums';
 import 'reflect-metadata';
 
 dayjs.extend(utc);
@@ -120,6 +125,9 @@ class Price {
   @ApiProperty({ default: 'USDT' })
   @Prop({ type: mongoose.Schema.Types.String })
   currency: string; // field
+
+  @ApiProperty({ required: false })
+  currency_address?: string; // field
 }
 
 export class Assets {
