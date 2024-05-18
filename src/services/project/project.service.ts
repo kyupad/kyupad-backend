@@ -51,7 +51,25 @@ export class ProjectService {
           status: EProjectStatus.ACTIVE,
         },
       },
-
+      {
+        $lookup: {
+          from: 'fungibletokens',
+          localField: 'price.currency',
+          foreignField: 'address',
+          as: 'tokenDetails',
+        },
+      },
+      {
+        $unwind: {
+          path: '$tokenDetails',
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $set: {
+          'price.currency': '$tokenDetails.symbol',
+        },
+      },
       {
         $facet: {
           totalCount: [{ $count: 'count' }],
@@ -59,6 +77,12 @@ export class ProjectService {
             { $sort: { 'timeline.registration_start_at': 1 } },
             { $skip: perPage * page - perPage },
             { $limit: perPage },
+            {
+              $project: {
+                _id: 0,
+                tokenDetails: 0,
+              },
+            },
           ],
         },
       },
@@ -90,7 +114,25 @@ export class ProjectService {
           status: EProjectStatus.ACTIVE,
         },
       },
-
+      {
+        $lookup: {
+          from: 'fungibletokens',
+          localField: 'price.currency',
+          foreignField: 'address',
+          as: 'tokenDetails',
+        },
+      },
+      {
+        $unwind: {
+          path: '$tokenDetails',
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $set: {
+          'price.currency': '$tokenDetails.symbol',
+        },
+      },
       {
         $facet: {
           totalCount: [{ $count: 'count' }],
@@ -98,6 +140,12 @@ export class ProjectService {
             { $sort: { 'timeline.registration_start_at': 1 } },
             { $skip: perPage * page - perPage },
             { $limit: perPage },
+            {
+              $project: {
+                _id: 0,
+                tokenDetails: 0,
+              },
+            },
           ],
         },
       },
@@ -130,12 +178,37 @@ export class ProjectService {
         },
       },
       {
+        $lookup: {
+          from: 'fungibletokens',
+          localField: 'price.currency',
+          foreignField: 'address',
+          as: 'tokenDetails',
+        },
+      },
+      {
+        $unwind: {
+          path: '$tokenDetails',
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $set: {
+          'price.currency': '$tokenDetails.symbol',
+        },
+      },
+      {
         $facet: {
           totalCount: [{ $count: 'count' }],
           data: [
             { $sort: { 'timeline.investment_end_at': -1 } },
             { $skip: perPage * page - perPage },
             { $limit: perPage },
+            {
+              $project: {
+                _id: 0,
+                tokenDetails: 0,
+              },
+            },
           ],
         },
       },
