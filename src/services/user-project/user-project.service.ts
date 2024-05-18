@@ -282,7 +282,7 @@ export class UserProjectService {
 
     info.investment_info = {
       currency: tokens ? tokens?.[0]?.symbol : projectInfo?.price?.currency,
-      ...(tokens ? { currency_address: tokens?.[0].address } : {}),
+      ...(tokens ? { currency_address: tokens?.[0]?.address } : {}),
       ticket_size: projectInfo.info?.ticket_size,
       token_offered: projectInfo.info?.token_offered,
       total_winner,

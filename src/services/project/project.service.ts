@@ -283,7 +283,7 @@ export class ProjectService {
     projectDetail.project.price = {
       ...projectInfo.price,
       currency: tokens ? tokens?.[0]?.symbol : projectInfo?.price?.currency,
-      ...(tokens ? { currency_address: tokens?.[0].address } : {}),
+      ...(tokens ? { currency_address: tokens?.[0]?.address } : {}),
     };
 
     if (wallet) {
