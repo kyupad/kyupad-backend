@@ -4,12 +4,29 @@ import { InjectConnection, InjectModel } from '@nestjs/mongoose';
 import mongoose, { FilterQuery, Model } from 'mongoose';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
-import { UserProject } from '@/schemas/user_project.schema';
-import { EProjectProgressStatus, EProjectStatus } from '@/enums';
-import { ProjectDetailDto } from '@usecases/project/project.response';
+import {
+  AssetWithPrice,
+  NftAssetWithPrice,
+  UserProject,
+} from '@/schemas/user_project.schema';
+import {
+  EProjectProgressStatus,
+  EProjectStatus,
+  EProjectUserAssetType,
+  ETxVerifyStatus,
+} from '@/enums';
+import {
+  AssetCatnipInfo,
+  AssetCatnipInfoChild,
+  MyInvestmentAsset,
+  MyInvestmentDetail,
+  ProjectDetailDto,
+} from '@usecases/project/project.response';
 import { plainToInstance } from 'class-transformer';
 import { UsesProjectAssets } from '@/services/user-project/user-project.response';
 import { FungibleTokensService } from '../fungible-tokens/fungible-tokens.service';
+import { InvestingHistory } from '@schemas/investing_histories.schema';
+import { NftService } from '@/services/nft/nft.service';
 
 dayjs.extend(utc);
 
@@ -19,11 +36,15 @@ export class ProjectService {
 
   constructor(
     @InjectModel(Project.name) private readonly projectModel: Model<Project>,
+    @InjectModel(InvestingHistory.name)
+    private readonly investingHistory: Model<InvestingHistory>,
     @InjectModel(UserProject.name)
     private readonly userProjectModel: Model<UserProject>,
     @InjectConnection() private readonly connection: mongoose.Connection,
     @Inject(FungibleTokensService)
     private readonly fungibleTokensService: FungibleTokensService,
+    @Inject(NftService)
+    private readonly nftService: NftService,
   ) {}
 
   async create(project: Project): Promise<Project> {
@@ -365,5 +386,157 @@ export class ProjectService {
       progressStatus = EProjectProgressStatus.FINISHED;
 
     return progressStatus;
+  }
+
+  async myInvested(wallet: string): Promise<MyInvestmentDetail> {
+    const [usersProject, userInvestedPma] = await Promise.all([
+      this.userProjectModel.find({
+        user_id: wallet,
+      }),
+      this.investingHistory.aggregate([
+        {
+          $match: {
+            wallet,
+            verify_status: { $ne: ETxVerifyStatus.NOT_VERIFY },
+          },
+        },
+        {
+          $group: {
+            _id: '$project_id',
+            invested: {
+              $sum: '$total',
+            },
+            updated_at: {
+              $max: '$updatedAt',
+            },
+          },
+        },
+        {
+          $lookup: {
+            from: 'projects',
+            let: { pId: { $toObjectId: '$_id' } },
+            pipeline: [{ $match: { $expr: { $eq: ['$_id', '$$pId'] } } }],
+            as: 'project',
+          },
+        },
+        {
+          $sort: {
+            updated_at: -1,
+          },
+        },
+      ]),
+    ]);
+    const userInvested = userInvestedPma as {
+      _id: string;
+      invested: number;
+      project: Project[];
+      updated_at: string;
+    }[];
+    const currentTime = new Date().getTime();
+    const myAssets = await this.projectUserAssets(usersProject);
+    return {
+      my_invested: userInvested
+        .filter((uv) => uv.project && uv.project.length > 0)
+        .map((uv) => {
+          return {
+            project_id: uv.project[0].id,
+            project_name: uv.project[0].name,
+            invested_token: uv.project[0].token_info?.symbol,
+            invested_amount:
+              (uv.project[0].info?.ticket_size * uv.invested) /
+              uv.project[0].price?.amount,
+            claim_available:
+              currentTime >=
+              new Date(uv.project[0].timeline.claim_start_at).getTime(),
+          };
+        }),
+      my_assets: myAssets,
+    };
+  }
+
+  async projectUserAssets(
+    userProjects: UserProject[],
+  ): Promise<MyInvestmentAsset | undefined> {
+    try {
+      let totalAssets = 0;
+      let stableCoinsAll: AssetWithPrice[] = [];
+      let fungiblesAll: AssetWithPrice[] = [];
+      let nftsAll: NftAssetWithPrice[] = [];
+      const assetCatnipInfo: AssetCatnipInfo[] = [];
+      userProjects.forEach((userProject) => {
+        totalAssets = totalAssets + (userProject.total_assets || 0);
+        const stableCoins = (userProject.tokens_with_price || []).filter(
+          (tk) => tk.asset_type === EProjectUserAssetType.STABLE_COIN,
+        );
+        stableCoinsAll = [...stableCoinsAll, ...stableCoins];
+        const fungibles = (userProject.tokens_with_price || []).filter(
+          (tk) => tk.asset_type === EProjectUserAssetType.FUNGIBLE,
+        );
+        fungiblesAll = [...fungiblesAll, ...fungibles];
+        const nfts = (userProject.nfts_with_price || []).filter(
+          (tk) => tk.asset_type === EProjectUserAssetType.NFT,
+        );
+        nftsAll = [...nftsAll, ...nfts];
+      });
+      const collectionsAddress = (nftsAll || []).map(
+        (nft) => nft.collection_address,
+      );
+      const collections = await this.nftService.getCollectionByListAddress(
+        Array.from(new Set(collectionsAddress)),
+      );
+      const nftAssets: AssetCatnipInfoChild[] = [];
+      nftsAll.forEach((nft) => {
+        const matchCollection = collections.find(
+          (col) => col.address === nft.collection_address,
+        );
+        if (matchCollection) {
+          const isExists = nftAssets.find(
+            (na) => na.address === matchCollection.address,
+          );
+          if (!isExists)
+            nftAssets.push({
+              address: matchCollection.address,
+              name: matchCollection.name,
+              symbol: matchCollection.symbol,
+              icon: matchCollection.icon,
+              multi_pier: nft.multi_pier,
+            });
+        }
+      });
+      assetCatnipInfo.push({
+        asset_type: EProjectUserAssetType.NFT,
+        assets: nftAssets,
+      });
+      assetCatnipInfo.push({
+        asset_type: EProjectUserAssetType.STABLE_COIN,
+        assets: stableCoinsAll.map((info) => {
+          return {
+            name: info.name,
+            symbol: info.symbol,
+            icon: info.icon,
+            multi_pier: info.multi_pier,
+          };
+        }),
+      });
+      assetCatnipInfo.push({
+        asset_type: EProjectUserAssetType.FUNGIBLE,
+        assets: fungiblesAll.map((info) => {
+          return {
+            name: info.name,
+            symbol: info.symbol,
+            icon: info.icon,
+            multi_pier: info.multi_pier,
+          };
+        }),
+      });
+      return {
+        total_assets: totalAssets,
+        assets_info: assetCatnipInfo,
+      };
+    } catch (e) {
+      this.logger.error(
+        `Cannot get project assets of user [${userProjects[0].user_id}] ${e.stack}`,
+      );
+    }
   }
 }

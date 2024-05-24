@@ -37,6 +37,7 @@ import { UserProjectService } from '@/services/user-project/user-project.service
 import { plainToInstance } from 'class-transformer';
 import { Project } from '@schemas/project.schema';
 import {
+  MyInvestedResponse,
   ProjectDetailResponse,
   UserProjectRegistrationResponse,
 } from '@usecases/project/project.response';
@@ -327,6 +328,26 @@ export class ProjectController {
       data: {
         status: 'SUCCESS',
       },
+    };
+  }
+
+  @Get('/my-invested')
+  @ApiNotFoundResponse({ description: 'Project not found' })
+  @ApiOkResponse({ type: MyInvestedResponse })
+  @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
+  async myInvested(): Promise<MyInvestedResponse> {
+    const accessToken = this.cls.get('accessToken');
+    let wallet;
+
+    if (accessToken) {
+      const userInfo = this.jwtService.decode(accessToken) as any;
+      wallet = userInfo?.sub;
+    }
+    const data = await this.projectService.myInvested(wallet);
+
+    return {
+      statusCode: HttpStatus.OK,
+      data,
     };
   }
 }

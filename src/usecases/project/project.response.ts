@@ -95,6 +95,11 @@ class AssetCatnipInfoChild {
   @ApiProperty({
     type: String,
   })
+  address?: string;
+
+  @ApiProperty({
+    type: String,
+  })
   name: string;
 
   @ApiProperty({
@@ -188,6 +193,39 @@ class UserProjectRegistrationDto {
   users_assets?: UsesProjectAssets;
 }
 
+class MyInvestedDto {
+  @ApiProperty({ type: String, required: true })
+  project_id: string;
+
+  @ApiProperty({ type: String, required: true })
+  project_name: string;
+
+  @ApiProperty({ type: String, required: true })
+  invested_token: string;
+
+  @ApiProperty({ type: Number, required: true })
+  invested_amount: number;
+
+  @ApiProperty({ type: Boolean, default: false })
+  claim_available: boolean;
+}
+
+class MyInvestmentAsset {
+  @ApiProperty({ type: Number, required: true })
+  total_assets: number;
+
+  @ApiProperty({ type: AssetCatnipInfo, isArray: true })
+  assets_info: AssetCatnipInfo[];
+}
+
+class MyInvestmentDetail {
+  @ApiProperty({ type: MyInvestmentAsset, required: false })
+  my_assets?: MyInvestmentAsset;
+
+  @ApiProperty({ type: MyInvestedDto, isArray: true })
+  my_invested: MyInvestedDto[];
+}
+
 class UserProjectRegistrationResponse extends withBaseResponse(
   UserProjectRegistrationDto,
   {},
@@ -206,6 +244,10 @@ class GenerateInvestingOffChainIdResponse extends withBaseResponse(
   {},
 ) {}
 
+class MyInvestedResponse extends withBaseResponse(MyInvestmentDetail, {
+  isArray: false,
+}) {}
+
 export {
   ProjectDetailResponse,
   ProjectDetailDto,
@@ -215,4 +257,8 @@ export {
   AssetCatnipInfoChild,
   GenerateInvestingOffChainIdResponse,
   GenerateInvestingOffChainIdDto,
+  MyInvestedDto,
+  MyInvestedResponse,
+  MyInvestmentDetail,
+  MyInvestmentAsset,
 };

@@ -6,7 +6,7 @@ import { CatnipAssetHolder } from '@usecases/project/project.input';
 
 export type UserDocument = HydratedDocument<UserProject>;
 
-class AssetWithPrice {
+export class AssetWithPrice {
   name: string;
 
   symbol: string;
@@ -24,7 +24,7 @@ class AssetWithPrice {
   multi_pier: number;
 }
 
-class NftAssetWithPrice {
+export class NftAssetWithPrice {
   collection_address: string;
 
   total_assets: number;
