@@ -45,7 +45,8 @@ export class ProjectService {
     private readonly fungibleTokensService: FungibleTokensService,
     @Inject(NftService)
     private readonly nftService: NftService,
-  ) {}
+  ) {
+  }
 
   async create(project: Project): Promise<Project> {
     const result = await this.projectModel.create(project);
@@ -507,27 +508,33 @@ export class ProjectService {
         asset_type: EProjectUserAssetType.NFT,
         assets: nftAssets,
       });
+      const stableCoinAssets: AssetCatnipInfoChild[] = [];
+      stableCoinsAll.forEach(sbc => {
+        const isExists = stableCoinAssets.find(info => info.symbol === sbc.symbol);
+        if (!isExists) stableCoinAssets.push({
+          name: sbc.name,
+          symbol: sbc.symbol,
+          icon: sbc.icon,
+          multi_pier: sbc.multi_pier,
+        });
+      });
       assetCatnipInfo.push({
         asset_type: EProjectUserAssetType.STABLE_COIN,
-        assets: stableCoinsAll.map((info) => {
-          return {
-            name: info.name,
-            symbol: info.symbol,
-            icon: info.icon,
-            multi_pier: info.multi_pier,
-          };
-        }),
+        assets: stableCoinAssets,
+      });
+      const fungiblesAssets: AssetCatnipInfoChild[] = [];
+      fungiblesAll.forEach(fa => {
+        const isExists = fungiblesAssets.find(info => info.symbol === fa.symbol);
+        if (!isExists) fungiblesAssets.push({
+          name: fa.name,
+          symbol: fa.symbol,
+          icon: fa.icon,
+          multi_pier: fa.multi_pier,
+        });
       });
       assetCatnipInfo.push({
         asset_type: EProjectUserAssetType.FUNGIBLE,
-        assets: fungiblesAll.map((info) => {
-          return {
-            name: info.name,
-            symbol: info.symbol,
-            icon: info.icon,
-            multi_pier: info.multi_pier,
-          };
-        }),
+        assets: fungiblesAssets,
       });
       return {
         total_assets: totalAssets,
