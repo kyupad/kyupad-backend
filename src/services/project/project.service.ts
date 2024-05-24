@@ -45,8 +45,7 @@ export class ProjectService {
     private readonly fungibleTokensService: FungibleTokensService,
     @Inject(NftService)
     private readonly nftService: NftService,
-  ) {
-  }
+  ) {}
 
   async create(project: Project): Promise<Project> {
     const result = await this.projectModel.create(project);
@@ -509,28 +508,34 @@ export class ProjectService {
         assets: nftAssets,
       });
       const stableCoinAssets: AssetCatnipInfoChild[] = [];
-      stableCoinsAll.forEach(sbc => {
-        const isExists = stableCoinAssets.find(info => info.symbol === sbc.symbol);
-        if (!isExists) stableCoinAssets.push({
-          name: sbc.name,
-          symbol: sbc.symbol,
-          icon: sbc.icon,
-          multi_pier: sbc.multi_pier,
-        });
+      stableCoinsAll.forEach((sbc) => {
+        const isExists = stableCoinAssets.find(
+          (info) => info.symbol === sbc.symbol,
+        );
+        if (!isExists)
+          stableCoinAssets.push({
+            name: sbc.name,
+            symbol: sbc.symbol,
+            icon: sbc.icon,
+            multi_pier: sbc.multi_pier,
+          });
       });
       assetCatnipInfo.push({
         asset_type: EProjectUserAssetType.STABLE_COIN,
         assets: stableCoinAssets,
       });
       const fungiblesAssets: AssetCatnipInfoChild[] = [];
-      fungiblesAll.forEach(fa => {
-        const isExists = fungiblesAssets.find(info => info.symbol === fa.symbol);
-        if (!isExists) fungiblesAssets.push({
-          name: fa.name,
-          symbol: fa.symbol,
-          icon: fa.icon,
-          multi_pier: fa.multi_pier,
-        });
+      fungiblesAll.forEach((fa) => {
+        const isExists = fungiblesAssets.find(
+          (info) => info.symbol === fa.symbol,
+        );
+        if (!isExists)
+          fungiblesAssets.push({
+            name: fa.name,
+            symbol: fa.symbol,
+            icon: fa.icon,
+            multi_pier: fa.multi_pier,
+          });
       });
       assetCatnipInfo.push({
         asset_type: EProjectUserAssetType.FUNGIBLE,

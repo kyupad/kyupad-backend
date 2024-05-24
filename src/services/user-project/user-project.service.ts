@@ -77,6 +77,7 @@ export class UserProjectService {
     if (!project || project.status !== EProjectStatus.ACTIVE) {
       throw new NotFoundException('Project not found');
     }
+    input.project_oid = String(project._id);
     if (
       new Date(project.timeline.registration_start_at).getTime() >
         currentTime ||

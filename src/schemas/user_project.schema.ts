@@ -52,6 +52,9 @@ export class UserProject {
   @Prop({ type: mongoose.Schema.Types.UUID })
   project_id: string;
 
+  @Prop({ type: String })
+  project_oid?: string;
+
   @Prop({ default: false })
   is_applied: boolean;
 
