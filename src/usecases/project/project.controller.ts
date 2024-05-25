@@ -351,23 +351,23 @@ export class ProjectController {
     };
   }
 
-  // @Get('/my-participation')
-  // @ApiNotFoundResponse({ description: 'Project not found' })
-  // @ApiOkResponse({ type: MyInvestedResponse })
-  // @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
-  // async myParticipation(): Promise<MyInvestedResponse> {
-  //   const accessToken = this.cls.get('accessToken');
-  //   let wallet;
-  //
-  //   if (accessToken) {
-  //     const userInfo = this.jwtService.decode(accessToken) as any;
-  //     wallet = userInfo?.sub;
-  //   }
-  //   const data = await this.projectService.myParticipation(wallet);
-  //
-  //   return {
-  //     statusCode: HttpStatus.OK,
-  //     data,
-  //   };
-  // }
+  @Get('/my-participation')
+  @ApiNotFoundResponse({ description: 'Project not found' })
+  @ApiOkResponse({ type: MyInvestedResponse })
+  @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
+  async myParticipation(): Promise<MyInvestedResponse> {
+    const accessToken = this.cls.get('accessToken');
+    let wallet;
+
+    if (accessToken) {
+      const userInfo = this.jwtService.decode(accessToken) as any;
+      wallet = userInfo?.sub;
+    }
+    const data = await this.projectService.myParticipation(wallet);
+
+    return {
+      statusCode: HttpStatus.OK,
+      data,
+    };
+  }
 }

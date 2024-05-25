@@ -2,7 +2,11 @@ import { Project } from '@schemas/project.schema';
 import { ApiProperty } from '@nestjs/swagger';
 import { withBaseResponse } from '@/interfaces/common.interface';
 import { UsesProjectAssets } from '@/services/user-project/user-project.response';
-import { EProjectProgressStatus, EProjectUserAssetType } from '@/enums';
+import {
+  EProjectParticipationStatus,
+  EProjectProgressStatus,
+  EProjectUserAssetType,
+} from '@/enums';
 import { Transform } from 'class-transformer';
 
 class UserProjectInvestmentInfo {
@@ -198,16 +202,39 @@ class MyInvestedDto {
   project_id: string;
 
   @ApiProperty({ type: String, required: true })
+  project_slug: string;
+
+  @ApiProperty({ type: String, required: true })
   project_name: string;
 
   @ApiProperty({ type: String, required: true })
-  invested_token: string;
+  token: string;
 
   @ApiProperty({ type: Number, required: true })
   invested_amount: number;
 
   @ApiProperty({ type: Boolean, default: false })
   claim_available: boolean;
+}
+
+class MyRegisteredDto {
+  @ApiProperty({ type: String, required: true })
+  project_id: string;
+
+  @ApiProperty({ type: String, required: true })
+  project_slug: string;
+
+  @ApiProperty({ type: String, required: true })
+  project_name: string;
+
+  @ApiProperty({ type: String, required: true })
+  token: string;
+
+  @ApiProperty({
+    enum: EProjectParticipationStatus,
+    default: EProjectParticipationStatus.OUTGOING,
+  })
+  project_participation_status: EProjectParticipationStatus;
 }
 
 class MyInvestmentAsset {
@@ -222,8 +249,11 @@ class MyInvestmentDetail {
   @ApiProperty({ type: MyInvestmentAsset, required: false })
   my_assets?: MyInvestmentAsset;
 
-  @ApiProperty({ type: MyInvestedDto, isArray: true })
-  my_invested: MyInvestedDto[];
+  @ApiProperty({ type: MyInvestedDto, required: false, isArray: true })
+  my_invested?: MyInvestedDto[];
+
+  @ApiProperty({ type: MyInvestedDto, required: false, isArray: true })
+  my_registered?: MyRegisteredDto[];
 }
 
 class UserProjectRegistrationResponse extends withBaseResponse(
@@ -261,4 +291,5 @@ export {
   MyInvestedResponse,
   MyInvestmentDetail,
   MyInvestmentAsset,
+  MyRegisteredDto,
 };

@@ -10,6 +10,7 @@ import {
   UserProject,
 } from '@/schemas/user_project.schema';
 import {
+  EProjectParticipationStatus,
   EProjectProgressStatus,
   EProjectStatus,
   EProjectUserAssetType,
@@ -20,6 +21,7 @@ import {
   AssetCatnipInfoChild,
   MyInvestmentAsset,
   MyInvestmentDetail,
+  MyRegisteredDto,
   ProjectDetailDto,
 } from '@usecases/project/project.response';
 import { plainToInstance } from 'class-transformer';
@@ -36,6 +38,8 @@ export class ProjectService {
 
   constructor(
     @InjectModel(Project.name) private readonly projectModel: Model<Project>,
+    @InjectModel(UserProject.name)
+    private readonly userProject: Model<UserProject>,
     @InjectModel(InvestingHistory.name)
     private readonly investingHistory: Model<InvestingHistory>,
     @InjectModel(UserProject.name)
@@ -441,7 +445,8 @@ export class ProjectService {
           return {
             project_id: uv.project[0].id,
             project_name: uv.project[0].name,
-            invested_token: uv.project[0].token_info?.symbol,
+            project_slug: uv.project[0].slug,
+            token: uv.project[0].token_info?.symbol,
             invested_amount:
               (uv.project[0].info?.ticket_size * uv.invested) /
               uv.project[0].price?.amount,
@@ -550,5 +555,72 @@ export class ProjectService {
         `Cannot get project assets of user [${userProjects[0].user_id}] ${e.stack}`,
       );
     }
+  }
+
+  async myParticipation(wallet: string): Promise<MyInvestmentDetail> {
+    const [usersProject, userRegisteredPma] = await Promise.all([
+      this.userProjectModel.find({
+        user_id: wallet,
+      }),
+      this.userProject.aggregate([
+        {
+          $match: {
+            user_id: wallet,
+          },
+        },
+        {
+          $lookup: {
+            from: 'projects',
+            let: { pId: { $toObjectId: '$project_oid' } },
+            pipeline: [{ $match: { $expr: { $eq: ['$_id', '$$pId'] } } }],
+            as: 'project',
+          },
+        },
+        {
+          $sort: {
+            createdAt: -1,
+          },
+        },
+        {
+          $project: {
+            project: 1,
+            project_oid: 1,
+            total_ticket: 1,
+          },
+        },
+      ]),
+    ]);
+    const userRegistered = userRegisteredPma as {
+      _id: string;
+      project: Project[];
+      project_oid: string;
+      total_ticket: number;
+    }[];
+    const currentTime = new Date().getTime();
+    const myAssets = await this.projectUserAssets(usersProject);
+    const myRegistered: MyRegisteredDto[] = [];
+    userRegistered.forEach((ur) => {
+      if (ur.project && ur.project.length > 0) {
+        let status = EProjectParticipationStatus.OUTGOING;
+        if (
+          currentTime >
+          new Date(ur.project[0].timeline.investment_end_at).getTime()
+        )
+          status = EProjectParticipationStatus.ENDED;
+        if ((ur.total_ticket || 0) > 0)
+          status = EProjectParticipationStatus.WON;
+        myRegistered.push({
+          project_id: String(ur.project[0].id),
+          project_slug: ur.project[0].slug,
+          project_name: ur.project[0].name,
+          token: ur.project[0].token_info?.symbol,
+          project_participation_status: status,
+        });
+      }
+    });
+    return {
+      my_assets: myAssets,
+      my_registered: myRegistered,
+    };
   }
 }

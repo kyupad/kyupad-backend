@@ -44,6 +44,12 @@ enum EPUserStatus {
   PROJECT_VESTING_SETTING_SUCCESSFUL = 'project_vesting_setting_successful',
 }
 
+enum EProjectParticipationStatus {
+  OUTGOING = 'outgoing',
+  ENDED = 'ended',
+  WON = 'won',
+}
+
 export {
   EProjectType,
   EProjectSalePool,
@@ -52,4 +58,5 @@ export {
   EProjectProgressStatus,
   EProjectUserAssetType,
   EPUserStatus,
+  EProjectParticipationStatus,
 };

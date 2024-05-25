@@ -16,6 +16,7 @@ import { NftServiceModule } from '@/services/nft/nft.module';
       { name: Project.name, schema: ProjectSchema },
       { name: UserProject.name, schema: UserProjectSchema },
       { name: InvestingHistory.name, schema: InvestingHistorySchema },
+      { name: UserProject.name, schema: UserProjectSchema },
     ]),
     FungibleTokensModule,
     NftServiceModule,
