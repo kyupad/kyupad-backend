@@ -19,6 +19,7 @@ import {
 import {
   AssetCatnipInfo,
   AssetCatnipInfoChild,
+  MyInvestedDto,
   MyInvestmentAsset,
   MyInvestmentDetail,
   MyRegisteredDto,
@@ -442,10 +443,11 @@ export class ProjectService {
       my_invested: userInvested
         .filter((uv) => uv.project && uv.project.length > 0)
         .map((uv) => {
-          return {
+          return plainToInstance(MyInvestedDto, {
             project_id: uv.project[0].id,
             project_name: uv.project[0].name,
             project_slug: uv.project[0].slug,
+            project_logo: uv.project[0].logo,
             token: uv.project[0].token_info?.symbol,
             invested_amount:
               (uv.project[0].info?.ticket_size * uv.invested) /
@@ -453,7 +455,7 @@ export class ProjectService {
             claim_available:
               currentTime >=
               new Date(uv.project[0].timeline.claim_start_at).getTime(),
-          };
+          });
         }),
       my_assets: myAssets,
     };
@@ -601,7 +603,7 @@ export class ProjectService {
     const myRegistered: MyRegisteredDto[] = [];
     userRegistered.forEach((ur) => {
       if (ur.project && ur.project.length > 0) {
-        let status = EProjectParticipationStatus.OUTGOING;
+        let status = EProjectParticipationStatus.ONGOING;
         if (
           currentTime >
           new Date(ur.project[0].timeline.investment_end_at).getTime()
@@ -609,13 +611,16 @@ export class ProjectService {
           status = EProjectParticipationStatus.ENDED;
         if ((ur.total_ticket || 0) > 0)
           status = EProjectParticipationStatus.WON;
-        myRegistered.push({
-          project_id: String(ur.project[0].id),
-          project_slug: ur.project[0].slug,
-          project_name: ur.project[0].name,
-          token: ur.project[0].token_info?.symbol,
-          project_participation_status: status,
-        });
+        myRegistered.push(
+          plainToInstance(MyRegisteredDto, {
+            project_id: String(ur.project[0].id),
+            project_slug: ur.project[0].slug,
+            project_name: ur.project[0].name,
+            token: ur.project[0].token_info?.symbol,
+            project_participation_status: status,
+            project_logo: ur.project[0].logo,
+          }),
+        );
       }
     });
     return {

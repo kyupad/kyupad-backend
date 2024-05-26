@@ -45,7 +45,7 @@ enum EPUserStatus {
 }
 
 enum EProjectParticipationStatus {
-  OUTGOING = 'outgoing',
+  ONGOING = 'ongoing',
   ENDED = 'ended',
   WON = 'won',
 }

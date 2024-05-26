@@ -205,6 +205,13 @@ class MyInvestedDto {
   project_slug: string;
 
   @ApiProperty({ type: String, required: true })
+  @Transform(({ value }) => {
+    if (value)
+      return value.replace('s3://', `${process.env.AWS_S3_BUCKET_URL}/`);
+  })
+  project_logo: string;
+
+  @ApiProperty({ type: String, required: true })
   project_name: string;
 
   @ApiProperty({ type: String, required: true })
@@ -228,11 +235,18 @@ class MyRegisteredDto {
   project_name: string;
 
   @ApiProperty({ type: String, required: true })
+  @Transform(({ value }) => {
+    if (value)
+      return value.replace('s3://', `${process.env.AWS_S3_BUCKET_URL}/`);
+  })
+  project_logo: string;
+
+  @ApiProperty({ type: String, required: true })
   token: string;
 
   @ApiProperty({
     enum: EProjectParticipationStatus,
-    default: EProjectParticipationStatus.OUTGOING,
+    default: EProjectParticipationStatus.ONGOING,
   })
   project_participation_status: EProjectParticipationStatus;
 }
