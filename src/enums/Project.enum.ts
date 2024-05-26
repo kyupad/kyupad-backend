@@ -50,6 +50,16 @@ enum EProjectParticipationStatus {
   WON = 'won',
 }
 
+enum EVestingType {
+  CLIFF = 'cliff',
+  LINEAR = 'linear',
+}
+
+enum EAmountPeriodType {
+  PERCENT = 'percent',
+  TOKEN = 'token',
+}
+
 export {
   EProjectType,
   EProjectSalePool,
@@ -59,4 +69,6 @@ export {
   EProjectUserAssetType,
   EPUserStatus,
   EProjectParticipationStatus,
+  EVestingType,
+  EAmountPeriodType,
 };

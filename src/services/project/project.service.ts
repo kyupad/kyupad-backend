@@ -1,5 +1,11 @@
 import { Project, Timeline } from '@/schemas/project.schema';
-import { Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Inject,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectConnection, InjectModel } from '@nestjs/mongoose';
 import mongoose, { FilterQuery, Model } from 'mongoose';
 import dayjs from 'dayjs';
@@ -23,6 +29,7 @@ import {
   MyInvestmentAsset,
   MyInvestmentDetail,
   MyRegisteredDto,
+  MyVestingDto,
   ProjectDetailDto,
 } from '@usecases/project/project.response';
 import { plainToInstance } from 'class-transformer';
@@ -30,6 +37,8 @@ import { UsesProjectAssets } from '@/services/user-project/user-project.response
 import { FungibleTokensService } from '../fungible-tokens/fungible-tokens.service';
 import { InvestingHistory } from '@schemas/investing_histories.schema';
 import { NftService } from '@/services/nft/nft.service';
+import { StreamFlowService } from '@/services/streamflow/streamflow.service';
+import { ProjectVesting } from '@schemas/project_vesting.schema';
 
 dayjs.extend(utc);
 
@@ -39,6 +48,8 @@ export class ProjectService {
 
   constructor(
     @InjectModel(Project.name) private readonly projectModel: Model<Project>,
+    @InjectModel(ProjectVesting.name)
+    private readonly projectVestingModel: Model<ProjectVesting>,
     @InjectModel(UserProject.name)
     private readonly userProject: Model<UserProject>,
     @InjectModel(InvestingHistory.name)
@@ -50,6 +61,8 @@ export class ProjectService {
     private readonly fungibleTokensService: FungibleTokensService,
     @Inject(NftService)
     private readonly nftService: NftService,
+    @Inject(StreamFlowService)
+    private readonly streamFlowService: StreamFlowService,
   ) {}
 
   async create(project: Project): Promise<Project> {
@@ -627,5 +640,120 @@ export class ProjectService {
       my_assets: myAssets,
       my_registered: myRegistered,
     };
+  }
+
+  async investedOfUser(wallet: string, project_Id: string): Promise<number> {
+    const invested = await this.investingHistory.find({
+      wallet,
+      project_id: project_Id,
+      pda_account: {
+        $ne: null,
+      },
+    });
+    if (!invested || invested.length === 0)
+      throw new BadRequestException('Investing info not found');
+    return invested[0].on_chain_total || 0;
+  }
+
+  async myVesting(wallet: string, projectSlug: string): Promise<MyVestingDto> {
+    const projectNative = await this.findProjectBySlug(projectSlug);
+    const project = JSON.parse(JSON.stringify(projectNative)) as Project;
+    const [vesting, invested, paymentToken] = await Promise.all([
+      this.projectVestingModel.findOne({
+        project_id: String(project._id),
+      }),
+      this.investedOfUser(wallet, String(project._id)),
+      this.fungibleTokensService.getTokenByAddress(project.price.currency),
+    ]);
+    if (!vesting || !vesting.token)
+      throw new NotFoundException('Vesting info not found');
+    const vestingStreams = await this.streamFlowService.incomingStreamsOfOwner(
+      String(project._id),
+      wallet,
+      vesting.token,
+    );
+    const tgeInfo = vesting.schedules.find((ve) => ve.vesting_type === 'cliff');
+    const investedTotal = project.info?.ticket_size * invested;
+    const cliffStream = vestingStreams.find((stream) => stream.is_cliff);
+    const linearStream = vestingStreams.find((stream) => !stream.is_cliff);
+    const response: MyVestingDto = {
+      project_vesting: {
+        _id: String(project._id),
+        name: project.name,
+        tge_amount: tgeInfo ? tgeInfo.amount_per_period?.amount : 0,
+        tge_type: tgeInfo ? tgeInfo.amount_per_period?.amount_type : undefined,
+        invested_total: investedTotal,
+        invested_currency: paymentToken ? paymentToken.symbol : 'UNKNOWN',
+        vesting_total: investedTotal / project.price?.amount,
+        vesting_token: vesting.token,
+        vesting_token_symbol: project.token_info.symbol,
+        vesting_type: project.token_info.vesting_type,
+      },
+      tge_vesting: cliffStream
+        ? {
+            stream_id: cliffStream.stream_id,
+            project__id: String(project._id),
+            start_at: cliffStream.start_at,
+            end_at: cliffStream.end_at,
+            sender: cliffStream.sender,
+            recipient: cliffStream.recipient,
+            total_amount: cliffStream.total_amount,
+            released_amount: cliffStream.released_amount,
+            available_amount: cliffStream.available_amount,
+            withdrawn_amount: cliffStream.withdrawn_amount,
+            last_withdrawn_at: cliffStream.last_withdrawn_at,
+            token: cliffStream.token,
+            vesting_schedule: (() => {
+              return [
+                {
+                  vesting_time: cliffStream.start_at,
+                  vesting_total: cliffStream.total_amount,
+                  vesting_token_symbol: project.token_info.symbol,
+                },
+              ];
+            })(),
+          }
+        : undefined,
+      linear_vesting: linearStream
+        ? {
+            stream_id: linearStream.stream_id,
+            project__id: String(project._id),
+            start_at: new Date(
+              new Date(linearStream.start_at).getTime() +
+                linearStream.period * 1000,
+            ).toISOString(),
+            end_at: linearStream.end_at,
+            sender: linearStream.sender,
+            recipient: linearStream.recipient,
+            total_amount: linearStream.total_amount,
+            released_amount: linearStream.released_amount,
+            available_amount: linearStream.available_amount,
+            withdrawn_amount: linearStream.withdrawn_amount,
+            last_withdrawn_at: linearStream.last_withdrawn_at,
+            token: linearStream.token,
+            vesting_schedule: (() => {
+              const arrLength =
+                (linearStream?.total_amount || 0) /
+                (linearStream?.amount_per_period || 1);
+              const data = Array(arrLength || 0)
+                .fill(0)
+                .map((_, idx) => {
+                  const startTime = new Date(
+                    linearStream?.start_at || 0,
+                  ).getTime();
+                  const vestingTime =
+                    startTime + (idx + 1) * (linearStream?.period || 1) * 1000;
+                  return {
+                    vesting_time: new Date(vestingTime).toISOString(),
+                    vesting_total: linearStream?.amount_per_period || 0,
+                    vesting_token_symbol: project.token_info.symbol,
+                  };
+                });
+              return data;
+            })(),
+          }
+        : undefined,
+    };
+    return response;
   }
 }

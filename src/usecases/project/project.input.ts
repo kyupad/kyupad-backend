@@ -1,6 +1,14 @@
-import { ETokenType } from '@/enums';
+import { EAmountPeriodType, ETokenType, EVestingType } from '@/enums';
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsNumber, IsString } from 'class-validator';
+import {
+  IsEnum,
+  IsNotEmpty,
+  IsNumber,
+  IsString,
+  ValidateIf,
+  ValidateNested,
+} from 'class-validator';
+import { Type } from 'class-transformer';
 
 class CatnipAssetHolder {
   type: ETokenType;
@@ -48,9 +56,67 @@ class SyncInvestingBySignatureInput {
   signature: string;
 }
 
+class AmountPeriod {
+  @ApiProperty({
+    type: Number,
+    required: true,
+  })
+  @IsNumber()
+  amount: number;
+
+  @ApiProperty({
+    enum: EAmountPeriodType,
+    required: true,
+  })
+  @IsEnum(EAmountPeriodType)
+  amount_type: EAmountPeriodType;
+}
+
+class VestingScheduleInput {
+  @ApiProperty({
+    enum: EVestingType,
+    required: true,
+  })
+  @IsEnum(EVestingType)
+  vesting_type: EVestingType;
+
+  @ApiProperty({
+    type: Number,
+    required: true,
+  })
+  @IsNumber()
+  @ValidateIf((x) => x.vesting_type !== EVestingType.CLIFF)
+  period: number;
+
+  @ApiProperty({
+    type: Date,
+    required: true,
+  })
+  @IsString()
+  start_at: string;
+
+  @ApiProperty({
+    type: AmountPeriod,
+    required: false,
+  })
+  @ValidateNested()
+  @Type(() => AmountPeriod)
+  amount_per_period?: AmountPeriod;
+}
+
+class MyVestingQuery {
+  @ApiProperty({
+    type: String,
+    required: true,
+  })
+  project_slug: string;
+}
+
 export {
   CatnipAssetHolder,
   UserRegistrationQuery,
   GenerateInvestingIdInput,
   SyncInvestingBySignatureInput,
+  VestingScheduleInput,
+  MyVestingQuery,
 };

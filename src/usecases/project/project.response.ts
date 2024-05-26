@@ -3,9 +3,11 @@ import { ApiProperty } from '@nestjs/swagger';
 import { withBaseResponse } from '@/interfaces/common.interface';
 import { UsesProjectAssets } from '@/services/user-project/user-project.response';
 import {
+  EAmountPeriodType,
   EProjectParticipationStatus,
   EProjectProgressStatus,
   EProjectUserAssetType,
+  EProjectVestingType,
 } from '@/enums';
 import { Transform } from 'class-transformer';
 
@@ -270,6 +272,82 @@ class MyInvestmentDetail {
   my_registered?: MyRegisteredDto[];
 }
 
+class UserProjectVestingDto extends Project {
+  @ApiProperty({ type: Number, required: false })
+  tge_amount?: number;
+  @ApiProperty({ enum: EAmountPeriodType, required: false })
+  tge_type?: EAmountPeriodType;
+  @ApiProperty({ type: Number, required: true })
+  invested_total: number;
+  @ApiProperty({ type: String, required: true })
+  invested_currency: string;
+  @ApiProperty({ type: Number, required: true })
+  vesting_total: number;
+  @ApiProperty({ type: String, required: true })
+  vesting_token_symbol: string;
+  @ApiProperty({ type: String, required: true })
+  vesting_token: string;
+  @ApiProperty({ enum: EProjectVestingType, required: true })
+  vesting_type: EProjectVestingType;
+}
+
+class VestingStreamScheduleDto {
+  @ApiProperty({ type: String, required: true })
+  vesting_time: string;
+  @ApiProperty({ type: Number, required: true })
+  vesting_total: number;
+  @ApiProperty({ type: String, required: true })
+  vesting_token_symbol: string;
+  @ApiProperty({ type: String, required: false })
+  vesting_tx?: string;
+}
+
+class VestingStreamDto {
+  @ApiProperty({ type: String, required: true })
+  stream_id: string;
+  @ApiProperty({ type: String, required: true })
+  project__id: string;
+  @ApiProperty({ type: String, required: true })
+  token: string;
+  @ApiProperty({ type: String, required: true })
+  sender: string;
+  @ApiProperty({ type: String, required: true })
+  recipient: string;
+  @ApiProperty({ type: Number, required: true })
+  period?: number;
+  @ApiProperty({ type: String, required: true })
+  start_at: string;
+  @ApiProperty({ type: String, required: true })
+  end_at: string;
+  @ApiProperty({ type: Number, required: true })
+  amount_per_period?: number;
+  @ApiProperty({ type: Number, required: true })
+  total_amount: number;
+  @ApiProperty({ type: Number, required: true })
+  released_amount?: number;
+  @ApiProperty({ type: Number, required: true })
+  available_amount?: number;
+  @ApiProperty({ type: Number, required: true })
+  withdrawn_amount?: number;
+  @ApiProperty({ type: String, required: false })
+  last_withdrawn_at?: string;
+  @ApiProperty({
+    type: VestingStreamScheduleDto,
+    required: true,
+    isArray: true,
+  })
+  vesting_schedule?: VestingStreamScheduleDto[];
+}
+
+class MyVestingDto {
+  @ApiProperty({ type: UserProjectVestingDto, required: true })
+  project_vesting: Partial<UserProjectVestingDto>;
+  @ApiProperty({ type: VestingStreamDto, required: false })
+  tge_vesting?: VestingStreamDto;
+  @ApiProperty({ type: VestingStreamDto, required: false })
+  linear_vesting?: VestingStreamDto;
+}
+
 class UserProjectRegistrationResponse extends withBaseResponse(
   UserProjectRegistrationDto,
   {},
@@ -292,6 +370,10 @@ class MyInvestedResponse extends withBaseResponse(MyInvestmentDetail, {
   isArray: false,
 }) {}
 
+class MyVestingResponse extends withBaseResponse(MyVestingDto, {
+  isArray: false,
+}) {}
+
 export {
   ProjectDetailResponse,
   ProjectDetailDto,
@@ -306,4 +388,9 @@ export {
   MyInvestmentDetail,
   MyInvestmentAsset,
   MyRegisteredDto,
+  MyVestingDto,
+  VestingStreamDto,
+  MyVestingResponse,
+  UserProjectVestingDto,
+  VestingStreamScheduleDto,
 };

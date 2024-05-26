@@ -17,4 +17,5 @@ export default () => ({
   HELIUS_API_KEY: process.env.HELIUS_API_KEY,
   AWS_APPSYNC_ENDPOINT: process.env.AWS_APPSYNC_ENDPOINT,
   PREFER_ENCRYPT_TOKEN: process.env.PREFER_ENCRYPT_TOKEN,
+  RPC_ENDPOINT: process.env.RPC_ENDPOINT,
 });

@@ -18,6 +18,9 @@ export class InvestingHistory {
   })
   _id?: string;
 
+  @Prop({ required: false, type: String })
+  pda_account?: string;
+
   @Prop({ required: true, type: String })
   project_id: string;
 
@@ -26,6 +29,9 @@ export class InvestingHistory {
 
   @Prop({ required: true, type: Number })
   total: number;
+
+  @Prop({ required: true, type: Number })
+  on_chain_total: number;
 
   @Prop({ required: false, type: String })
   signature: string;

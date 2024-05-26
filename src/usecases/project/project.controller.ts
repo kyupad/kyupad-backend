@@ -38,10 +38,12 @@ import { plainToInstance } from 'class-transformer';
 import { Project } from '@schemas/project.schema';
 import {
   MyInvestedResponse,
+  MyVestingResponse,
   ProjectDetailResponse,
   UserProjectRegistrationResponse,
 } from '@usecases/project/project.response';
 import {
+  MyVestingQuery,
   SyncInvestingBySignatureInput,
   UserRegistrationQuery,
 } from '@usecases/project/project.input';
@@ -364,6 +366,30 @@ export class ProjectController {
       wallet = userInfo?.sub;
     }
     const data = await this.projectService.myParticipation(wallet);
+
+    return {
+      statusCode: HttpStatus.OK,
+      data,
+    };
+  }
+
+  @Get('/my-vesting')
+  @ApiNotFoundResponse({ description: 'Project not found' })
+  @ApiOkResponse({ type: MyVestingResponse })
+  @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
+  async myVesting(@Query() query: MyVestingQuery): Promise<MyVestingResponse> {
+    const accessToken = this.cls.get('accessToken');
+    let wallet;
+
+    if (accessToken) {
+      const userInfo = this.jwtService.decode(accessToken) as any;
+      wallet = userInfo?.sub;
+    }
+    if (!wallet) throw new UnauthorizedException();
+    const data = await this.projectService.myVesting(
+      wallet,
+      query?.project_slug,
+    );
 
     return {
       statusCode: HttpStatus.OK,

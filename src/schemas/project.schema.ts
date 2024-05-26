@@ -76,7 +76,7 @@ class TokenInfo {
     type: mongoose.Schema.Types.String,
     enum: EProjectVestingType,
   })
-  vesting_type: string; // field
+  vesting_type: EProjectVestingType; // field
 
   @Prop({ required: true, type: mongoose.Schema.Types.String })
   vesting_schedule: string;
