@@ -20,6 +20,7 @@ import {
   EProjectProgressStatus,
   EProjectStatus,
   EProjectUserAssetType,
+  EPUserStatus,
   ETxVerifyStatus,
 } from '@/enums';
 import {
@@ -315,7 +316,7 @@ export class ProjectService {
     ) {
       tokens = await this.fungibleTokensService.findTokens({
         address: projectInfo?.price?.currency,
-        // is_stable: true, FIXME: is_stable MUST be true
+        is_stable: true,
       });
     }
 
@@ -466,8 +467,10 @@ export class ProjectService {
               (uv.project[0].info?.ticket_size * uv.invested) /
               uv.project[0].price?.amount,
             claim_available:
+              uv.project[0].p_user_status ===
+                EPUserStatus.PROJECT_VESTING_SETTING_SUCCESSFUL &&
               currentTime >=
-              new Date(uv.project[0].timeline.claim_start_at).getTime(),
+                new Date(uv.project[0].timeline.claim_start_at).getTime(),
           });
         }),
       my_assets: myAssets,
