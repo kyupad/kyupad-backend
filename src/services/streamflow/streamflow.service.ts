@@ -69,7 +69,7 @@ export class StreamFlowService {
           fee: fullStreamData.streamflowFeeTotal.toNumber(),
           deposit: fullStreamData.depositedAmount.toNumber(),
           cliff_at: new Date(fullStreamData.cliff * 1000).toISOString(),
-          cliff_amount: fullStreamData.cliffAmount.toNumber(),
+          cliff_amount: fullStreamData.cliffAmount.toNumber() / numDecimals,
           automatic_withdrawal: fullStreamData.automaticWithdrawal,
           cancelable_by_recipient: fullStreamData.cancelableByRecipient,
           cancelable_by_sender: fullStreamData.cancelableBySender,
@@ -92,6 +92,8 @@ export class StreamFlowService {
           releaseRange < 0 ? 0 : Math.ceil(releaseRange / 1000 / data.period);
         if (isCliff) releasedRatio = 1;
         data.released_amount = releasedRatio * data.amount_per_period;
+        if (currentTime >= new Date(fullStreamData.cliff * 1000).getTime())
+          data.released_amount = data.released_amount + data.cliff_amount;
         data.available_amount =
           data.released_amount - (data.withdrawn_amount || 0);
         streamsMatch.push(data);

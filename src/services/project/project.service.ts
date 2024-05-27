@@ -747,7 +747,15 @@ export class ProjectService {
                 vesting_time: new Date(vestingTime).toISOString(),
                 vesting_total: linearStream?.amount_per_period || 0,
                 vesting_token_symbol: project.token_info.symbol,
+                is_cliff: false,
               };
+            });
+          if (linearStream.cliff_amount && linearStream.cliff_amount > 0)
+            data.unshift({
+              vesting_time: new Date(linearStream.cliff_at).toISOString(),
+              vesting_total: linearStream?.cliff_amount || 0,
+              vesting_token_symbol: project.token_info.symbol,
+              is_cliff: true,
             });
           return data;
         })(),
