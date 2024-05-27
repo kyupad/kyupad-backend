@@ -304,6 +304,8 @@ class VestingStreamScheduleDto {
 
 class VestingStreamDto {
   @ApiProperty({ type: Boolean, default: false })
+  is_active?: boolean;
+  @ApiProperty({ type: Boolean, default: false })
   is_tge: boolean;
   @ApiProperty({ type: String, required: true })
   stream_id: string;

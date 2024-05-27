@@ -695,6 +695,12 @@ export class ProjectService {
     };
     if (cliffStream && (cliffStream?.available_amount || 0) > 0) {
       response.vesting_pool = {
+        is_active:
+          (cliffStream.available_amount || 0) > 0 &&
+          project.p_user_status ===
+            EPUserStatus.PROJECT_VESTING_SETTING_SUCCESSFUL &&
+          new Date().getTime() >=
+            new Date(project.timeline.claim_start_at).getTime(),
         is_tge: true,
         stream_id: cliffStream.stream_id,
         project__id: String(project._id),
@@ -720,6 +726,12 @@ export class ProjectService {
       };
     } else if (linearStream) {
       response.vesting_pool = {
+        is_active:
+          (linearStream.available_amount || 0) > 0 &&
+          project.p_user_status ===
+            EPUserStatus.PROJECT_VESTING_SETTING_SUCCESSFUL &&
+          new Date().getTime() >=
+            new Date(project.timeline.claim_start_at).getTime(),
         is_tge: false,
         stream_id: linearStream.stream_id,
         project__id: String(project._id),
