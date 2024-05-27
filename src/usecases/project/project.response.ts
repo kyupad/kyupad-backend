@@ -303,6 +303,8 @@ class VestingStreamScheduleDto {
 }
 
 class VestingStreamDto {
+  @ApiProperty({ type: Boolean, default: false })
+  is_tge: boolean;
   @ApiProperty({ type: String, required: true })
   stream_id: string;
   @ApiProperty({ type: String, required: true })
@@ -343,9 +345,7 @@ class MyVestingDto {
   @ApiProperty({ type: UserProjectVestingDto, required: true })
   project_vesting: Partial<UserProjectVestingDto>;
   @ApiProperty({ type: VestingStreamDto, required: false })
-  tge_vesting?: VestingStreamDto;
-  @ApiProperty({ type: VestingStreamDto, required: false })
-  linear_vesting?: VestingStreamDto;
+  vesting_pool?: VestingStreamDto;
 }
 
 class UserProjectRegistrationResponse extends withBaseResponse(

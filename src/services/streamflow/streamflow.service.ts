@@ -82,13 +82,14 @@ export class StreamFlowService {
             fullStreamData.lastWithdrawnAt * 1000,
           ).toISOString();
         const currentTime = new Date().getTime();
+        const endTime = new Date(fullStreamData.end * 1000).getTime();
         const releaseRange =
-          currentTime -
-          (currentTime < new Date(fullStreamData.end * 1000).getTime()
-            ? (fullStreamData.start + fullStreamData.period) * 1000
-            : fullStreamData.end * 1000);
+          (currentTime < endTime
+            ? currentTime
+            : endTime + data.amount_per_period) -
+          (fullStreamData.start + data.period) * 1000;
         let releasedRatio =
-          releaseRange < 0 ? 0 : Math.ceil(releaseRange / 1000 / 1800);
+          releaseRange < 0 ? 0 : Math.ceil(releaseRange / 1000 / data.period);
         if (isCliff) releasedRatio = 1;
         data.released_amount = releasedRatio * data.amount_per_period;
         data.available_amount =

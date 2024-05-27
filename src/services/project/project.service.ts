@@ -689,71 +689,70 @@ export class ProjectService {
         vesting_token_symbol: project.token_info.symbol,
         vesting_type: project.token_info.vesting_type,
       },
-      tge_vesting: cliffStream
-        ? {
-            stream_id: cliffStream.stream_id,
-            project__id: String(project._id),
-            start_at: cliffStream.start_at,
-            end_at: cliffStream.end_at,
-            sender: cliffStream.sender,
-            recipient: cliffStream.recipient,
-            total_amount: cliffStream.total_amount,
-            released_amount: cliffStream.released_amount,
-            available_amount: cliffStream.available_amount,
-            withdrawn_amount: cliffStream.withdrawn_amount,
-            last_withdrawn_at: cliffStream.last_withdrawn_at,
-            token: cliffStream.token,
-            vesting_schedule: (() => {
-              return [
-                {
-                  vesting_time: cliffStream.start_at,
-                  vesting_total: cliffStream.total_amount,
-                  vesting_token_symbol: project.token_info.symbol,
-                },
-              ];
-            })(),
-          }
-        : undefined,
-      linear_vesting: linearStream
-        ? {
-            stream_id: linearStream.stream_id,
-            project__id: String(project._id),
-            start_at: new Date(
-              new Date(linearStream.start_at).getTime() +
-                linearStream.period * 1000,
-            ).toISOString(),
-            end_at: linearStream.end_at,
-            sender: linearStream.sender,
-            recipient: linearStream.recipient,
-            total_amount: linearStream.total_amount,
-            released_amount: linearStream.released_amount,
-            available_amount: linearStream.available_amount,
-            withdrawn_amount: linearStream.withdrawn_amount,
-            last_withdrawn_at: linearStream.last_withdrawn_at,
-            token: linearStream.token,
-            vesting_schedule: (() => {
-              const arrLength =
-                (linearStream?.total_amount || 0) /
-                (linearStream?.amount_per_period || 1);
-              const data = Array(arrLength || 0)
-                .fill(0)
-                .map((_, idx) => {
-                  const startTime = new Date(
-                    linearStream?.start_at || 0,
-                  ).getTime();
-                  const vestingTime =
-                    startTime + (idx + 1) * (linearStream?.period || 1) * 1000;
-                  return {
-                    vesting_time: new Date(vestingTime).toISOString(),
-                    vesting_total: linearStream?.amount_per_period || 0,
-                    vesting_token_symbol: project.token_info.symbol,
-                  };
-                });
-              return data;
-            })(),
-          }
-        : undefined,
     };
+    if (cliffStream && (cliffStream?.available_amount || 0) > 0) {
+      response.vesting_pool = {
+        is_tge: true,
+        stream_id: cliffStream.stream_id,
+        project__id: String(project._id),
+        start_at: cliffStream.start_at,
+        end_at: cliffStream.end_at,
+        sender: cliffStream.sender,
+        recipient: cliffStream.recipient,
+        total_amount: cliffStream.total_amount,
+        released_amount: cliffStream.released_amount,
+        available_amount: cliffStream.available_amount,
+        withdrawn_amount: cliffStream.withdrawn_amount,
+        last_withdrawn_at: cliffStream.last_withdrawn_at,
+        token: cliffStream.token,
+        vesting_schedule: (() => {
+          return [
+            {
+              vesting_time: cliffStream.start_at,
+              vesting_total: cliffStream.total_amount,
+              vesting_token_symbol: project.token_info.symbol,
+            },
+          ];
+        })(),
+      };
+    } else if (linearStream) {
+      response.vesting_pool = {
+        is_tge: false,
+        stream_id: linearStream.stream_id,
+        project__id: String(project._id),
+        start_at: new Date(
+          new Date(linearStream.start_at).getTime() +
+            linearStream.period * 1000,
+        ).toISOString(),
+        end_at: linearStream.end_at,
+        sender: linearStream.sender,
+        recipient: linearStream.recipient,
+        total_amount: linearStream.total_amount,
+        released_amount: linearStream.released_amount,
+        available_amount: linearStream.available_amount,
+        withdrawn_amount: linearStream.withdrawn_amount,
+        last_withdrawn_at: linearStream.last_withdrawn_at,
+        token: linearStream.token,
+        vesting_schedule: (() => {
+          const arrLength =
+            (linearStream?.total_amount || 0) /
+            (linearStream?.amount_per_period || 1);
+          const data = Array(arrLength || 0)
+            .fill(0)
+            .map((_, idx) => {
+              const startTime = new Date(linearStream?.start_at || 0).getTime();
+              const vestingTime =
+                startTime + (idx + 1) * (linearStream?.period || 1) * 1000;
+              return {
+                vesting_time: new Date(vestingTime).toISOString(),
+                vesting_total: linearStream?.amount_per_period || 0,
+                vesting_token_symbol: project.token_info.symbol,
+              };
+            });
+          return data;
+        })(),
+      };
+    }
     return response;
   }
 }
