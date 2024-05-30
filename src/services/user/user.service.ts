@@ -33,11 +33,17 @@ export class UserService {
   async findUserByWallet(
     wallet: string,
     network: EOnChainNetwork = EOnChainNetwork.SOLANA,
+    throwError = true,
   ): Promise<User | undefined> {
-    const user = await this.userModel.findOne({
-      id: `${network}:${wallet}`,
-    });
-    return user ? (JSON.parse(JSON.stringify(user)) as User) : undefined;
+    try {
+      const user = await this.userModel.findOne({
+        id: `${network}:${wallet}`,
+      });
+      return user ? (JSON.parse(JSON.stringify(user)) as User) : undefined;
+    } catch (e) {
+      this.logger.error(`Cannot get user [${wallet}]`, e);
+      if (throwError) throw e;
+    }
   }
 
   async update(

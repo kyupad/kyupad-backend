@@ -230,6 +230,14 @@ export class ProjectService {
         },
       },
       {
+        $lookup: {
+          from: 'userprojects',
+          let: { pId: { $toString: '$_id' } },
+          pipeline: [{ $match: { $expr: { $eq: ['$project_oid', '$$pId'] } } }],
+          as: 'user_projects',
+        },
+      },
+      {
         $unwind: {
           path: '$tokenDetails',
           preserveNullAndEmptyArrays: true,
@@ -238,6 +246,10 @@ export class ProjectService {
       {
         $set: {
           'price.currency': '$tokenDetails.symbol',
+          participants: {
+            $size: '$user_projects',
+          },
+          ath_roi: 'TBA',
         },
       },
       {
@@ -251,6 +263,7 @@ export class ProjectService {
               $project: {
                 _id: 0,
                 tokenDetails: 0,
+                user_projects: 0,
               },
             },
           ],
@@ -340,7 +353,11 @@ export class ProjectService {
             user_id: wallet,
           }),
           this.aggregateUsersProjectAssets(String(project?.id)),
-          this.userService.findUserByWallet(wallet, EOnChainNetwork.SOLANA),
+          this.userService.findUserByWallet(
+            wallet,
+            EOnChainNetwork.SOLANA,
+            false,
+          ),
         ]);
       if (myUserProject) projectDetail.is_applied = true;
       if (aggregateUserRegisterProjectResult)

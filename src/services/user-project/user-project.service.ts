@@ -89,7 +89,11 @@ export class UserProjectService {
         project_id: input.project_id,
       }),
       this.seasonService.activeSeason(),
-      this.userService.findUserByWallet(input.user_id),
+      this.userService.findUserByWallet(
+        input.user_id,
+        EOnChainNetwork.SOLANA,
+        false,
+      ),
     ]);
     input.project_oid = String(project._id);
     if (

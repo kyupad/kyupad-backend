@@ -265,6 +265,12 @@ export class Project {
 
   @Exclude()
   registration_start_at_diff?: number;
+
+  @ApiProperty({ type: Number, required: false })
+  participants?: number;
+
+  @ApiProperty({ type: String, required: false, default: 'TBA' })
+  ath_roi?: string;
 }
 
 export const ProjectSchema = SchemaFactory.createForClass(Project);
