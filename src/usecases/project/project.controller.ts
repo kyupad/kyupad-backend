@@ -205,6 +205,7 @@ export class ProjectController {
         project_id,
         user_id: userInfo.sub,
         is_applied: true,
+        notification_email: body?.notification_email,
       });
     }
 
@@ -247,6 +248,7 @@ export class ProjectController {
       project_id,
       user_id: body.user_id || 'NONE',
       is_applied: true,
+      notification_email: body?.notification_email,
     });
 
     return {
@@ -396,4 +398,18 @@ export class ProjectController {
       data,
     };
   }
+
+  // @Post('/test-mail')
+  // @ApiOkResponse({ type: DefaultResponse })
+  // @ApiUnauthorizedResponse({ description: 'Unauthorized' })
+  // @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
+  // async testEmail(@Body() input: EmailTestInput): Promise<DefaultResponse> {
+  //   await this.projectService.testEmail(input.email);
+  //   return {
+  //     statusCode: HttpStatus.OK,
+  //     data: {
+  //       status: 'SUCCESS',
+  //     },
+  //   };
+  // }
 }

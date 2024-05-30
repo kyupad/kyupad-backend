@@ -10,7 +10,11 @@ import {
 } from '@schemas/investing_histories.schema';
 import { NftServiceModule } from '@/services/nft/nft.module';
 import { StreamFlowServiceModule } from '@/services/streamflow/streamflow.module';
-import { ProjectVesting, ProjectVestingSchema } from '@schemas/project_vesting.schema';
+import {
+  ProjectVesting,
+  ProjectVestingSchema,
+} from '@schemas/project_vesting.schema';
+import { UserServiceModule } from '@/services/user/user.module';
 
 @Module({
   imports: [
@@ -24,6 +28,7 @@ import { ProjectVesting, ProjectVestingSchema } from '@schemas/project_vesting.s
     FungibleTokensModule,
     NftServiceModule,
     StreamFlowServiceModule,
+    UserServiceModule,
   ],
   providers: [ProjectService],
   exports: [ProjectService],

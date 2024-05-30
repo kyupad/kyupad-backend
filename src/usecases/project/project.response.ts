@@ -93,6 +93,12 @@ class ProjectDetailDto {
     type: UsesProjectAssets,
   })
   users_assets?: UsesProjectAssets;
+
+  @ApiProperty({
+    type: String,
+    required: false,
+  })
+  notification_email?: string;
 }
 
 class ProjectDetailResponse extends withBaseResponse(ProjectDetailDto, {}) {}

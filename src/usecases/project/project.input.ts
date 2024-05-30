@@ -112,6 +112,14 @@ class MyVestingQuery {
   project_slug: string;
 }
 
+class EmailTestInput {
+  @ApiProperty({
+    type: String,
+    required: true,
+  })
+  email: string;
+}
+
 export {
   CatnipAssetHolder,
   UserRegistrationQuery,
@@ -119,4 +127,5 @@ export {
   SyncInvestingBySignatureInput,
   VestingScheduleInput,
   MyVestingQuery,
+  EmailTestInput,
 };

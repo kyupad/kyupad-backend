@@ -14,6 +14,7 @@ import { ProjectService } from '@/services/project/project.service';
 import { ICatnipAssetsSnapshotBody } from '@/services/project/project.input';
 import { SeasonService } from '@/services/season/season.service';
 import {
+  EOnChainNetwork,
   EProjectProgressStatus,
   EProjectStatus,
   EProjectUserAssetType,
@@ -30,10 +31,20 @@ import { Project } from '@schemas/project.schema';
 import { NftService } from '@/services/nft/nft.service';
 import { ProjectInvestingInfoService } from '../project-investing-info/project-investing-info.service';
 import { FungibleTokensService } from '../fungible-tokens/fungible-tokens.service';
-import { encrypt, getMerkleProof } from '@/helpers';
+import {
+  encrypt,
+  formatByEnUsNum,
+  formatIODate,
+  getMerkleProof,
+  shortWalletAddress,
+} from '@/helpers';
 import { InvestingHistory } from '@schemas/investing_histories.schema';
 import { SyncInvestingBySignatureInput } from '@usecases/project/project.input';
 import { HeliusIDOTxRawHook } from '@/services/helius/helius.response';
+import { PROJECT_REGISTERED_TMP } from '@/services/user-project/mail-template/project-registered.template';
+import { ConfigService } from '@nestjs/config';
+import { SeSService } from '@/services/aws/ses/ses.service';
+import { UserService } from '@/services/user/user.service';
 
 interface IGlobalCacheHolder {
   last_update_time?: number;
@@ -45,6 +56,7 @@ export class UserProjectService {
   private logger = new Logger(ProjectService.name);
 
   constructor(
+    private readonly configService: ConfigService,
     @InjectModel(UserProject.name)
     private readonly userProjectModel: Model<UserProject>,
     @InjectModel(InvestingHistory.name)
@@ -62,21 +74,23 @@ export class UserProjectService {
     private readonly projectInvestingInfo: ProjectInvestingInfoService,
     @Inject(FungibleTokensService)
     private readonly fungibleTokensService: FungibleTokensService,
+    @Inject(SeSService)
+    private readonly sesService: SeSService,
+    @Inject(UserService)
+    private readonly userService: UserService,
   ) {}
 
   async create(input: UserProject): Promise<UserProject> {
     const currentTime = new Date().getTime();
-    const [project, userProject, season] = await Promise.all([
+    const [project, userProject, season, user] = await Promise.all([
       this.projectService.findProjectById(input.project_id),
       this.userProjectModel.findOne({
         user_id: input.user_id,
         project_id: input.project_id,
       }),
       this.seasonService.activeSeason(),
+      this.userService.findUserByWallet(input.user_id),
     ]);
-    if (!project || project.status !== EProjectStatus.ACTIVE) {
-      throw new NotFoundException('Project not found');
-    }
     input.project_oid = String(project._id);
     if (
       new Date(project.timeline.registration_start_at).getTime() >
@@ -87,7 +101,19 @@ export class UserProjectService {
     if (userProject) throw new NotFoundException('You have joined the project');
     const session = await this.connection.startSession();
     const resultTrans = await session.withTransaction(async () => {
-      const result = await this.userProjectModel.create([input], { session });
+      const [result] = await Promise.all([
+        this.userProjectModel.create([input], { session }),
+        this.userService.update(
+          `${EOnChainNetwork.SOLANA}:${input.user_id}`,
+          {
+            email:
+              user && !user?.email && input.notification_email
+                ? input.notification_email
+                : undefined,
+          },
+          false,
+        ),
+      ]);
       await this.awsSQSService.createSQS<ICatnipAssetsSnapshotBody>({
         queue_url: process.env.AWS_QUEUE_URL as string,
         message_group_id: 'REGISTRATION_CATNIP_ASSET_SNAPSHOT',
@@ -99,6 +125,13 @@ export class UserProjectService {
           season_id: String(season?._id),
         },
       });
+      if (input.notification_email)
+        await this.sendRegisteredEmail(
+          input.user_id,
+          input.notification_email,
+          project,
+          String(result[0]._id),
+        );
       return result[0];
     });
     await session.endSession();
@@ -522,6 +555,77 @@ export class UserProjectService {
     });
     if (bulkData.length > 0) {
       await this.investingHistoryModel.bulkWrite(bulkData);
+    }
+  }
+
+  async sendRegisteredEmail(
+    wallet: string,
+    email: string,
+    project: Project,
+    userProjectId: string,
+  ): Promise<void> {
+    try {
+      const paymentCurrency =
+        await this.fungibleTokensService.getTokenByAddress(
+          project?.price.currency,
+        );
+      const subject = this.sesService.fillTemplate(
+        PROJECT_REGISTERED_TMP.subject,
+        { PROJECT_NAME: project.name },
+      );
+      const content = this.sesService.fillTemplate(
+        PROJECT_REGISTERED_TMP.content,
+        {
+          PROJECT_NAME: project.name,
+          TOKEN_SYMBOL: project.token_info?.symbol,
+          AWS_S3_BUCKET_URL: this.configService.get(
+            'AWS_S3_BUCKET_URL',
+          ) as string,
+          SORT_WALLET: shortWalletAddress(wallet),
+          TWITTER_LINK:
+            this.configService.get('KYUPAD_LINK_TWITTER') ||
+            'https://x.com/Kyupad_xyz',
+          DISCORD_LINK:
+            this.configService.get('KYUPAD_LINK_DISCORD') ||
+            'https://discord.com/invite/kyupad',
+          PRIVACY_POLICY_LINK:
+            this.configService.get('KYUPAD_LINK_PRIVACY_POLICY_LINK') ||
+            'https://docs.google.com/document/d/1nF_G2MtVtGGc3U_-TcZwR5lEdmE4-cnlqFxjLFZ4qf8/edit?usp=sharing',
+          TERMS_CONDITIONS_LINK:
+            this.configService.get('KYUPAD_LINK_TERMS_CONDITIONS_LINK') ||
+            'https://docs.kyupad.xyz/our-product/terms-and-condition',
+          YOUR_TICKET_NUMBER: userProjectId,
+          IDO_DATE: formatIODate(new Date().toISOString()),
+          START_TIME: formatIODate(
+            new Date(project.timeline.investment_start_at).toISOString(),
+          ),
+          END_TIME: formatIODate(
+            new Date(project.timeline.investment_end_at).toISOString(),
+          ),
+          RAFFLE_DATE: formatIODate(
+            new Date(project.timeline.snapshot_end_at).toISOString(),
+            true,
+          ),
+          ALLOCATION_AMOUNT: formatByEnUsNum(project.info.token_offered),
+          CRYPTOCURRENCY_NAME: paymentCurrency?.symbol || '',
+        },
+      );
+      await this.sesService.send({
+        type: PROJECT_REGISTERED_TMP.type,
+        to: [email],
+        subject: {
+          data: subject,
+          charset: 'UTF-8',
+        },
+        body: {
+          html: {
+            data: content,
+            charset: 'UTF-8',
+          },
+        },
+      });
+    } catch (e) {
+      this.logger.error(`Cannot send registered email [${e.stack}] `);
     }
   }
 }

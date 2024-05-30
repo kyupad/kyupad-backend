@@ -12,6 +12,8 @@ import {
   InvestingHistory,
   InvestingHistorySchema,
 } from '@schemas/investing_histories.schema';
+import { SesServiceModule } from '@/services/aws/ses/ses.module';
+import { UserServiceModule } from '@/services/user/user.module';
 
 @Module({
   imports: [
@@ -25,6 +27,8 @@ import {
     NftServiceModule,
     ProjectInvestingInfoModule,
     FungibleTokensModule,
+    SesServiceModule,
+    UserServiceModule
   ],
   providers: [UserProjectService],
   exports: [UserProjectService],

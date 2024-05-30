@@ -7,6 +7,9 @@ import { ApiProperty, OmitType } from '@nestjs/swagger';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import { EProjectType, EProjectVestingType } from '@/enums';
+import { Prop } from '@nestjs/mongoose';
+import { string } from 'joi';
+import { IsEmail, IsOptional, IsString } from 'class-validator';
 
 dayjs.extend(utc);
 
@@ -147,7 +150,13 @@ class DetailProjectResponse extends withBaseResponse(DetailProjectResult) {}
 
 class ProjectApplyBody {
   @ApiProperty()
+  @IsString()
   project_id: string;
+
+  @ApiProperty({ type: String, required: false })
+  @IsOptional()
+  @IsEmail()
+  notification_email?: string;
 }
 
 class ProjectApplyMockBody {
@@ -156,6 +165,11 @@ class ProjectApplyMockBody {
 
   @ApiProperty()
   user_id?: string;
+
+  @ApiProperty({ type: String, required: false })
+  @IsOptional()
+  @IsEmail()
+  notification_email?: string;
 }
 
 class ProjectApplyResponse extends withBaseResponse(ProjectApplyBody) {}

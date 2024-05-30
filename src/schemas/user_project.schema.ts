@@ -3,6 +3,7 @@ import { ApiProperty } from '@nestjs/swagger';
 import mongoose, { HydratedDocument } from 'mongoose';
 import { EProjectUserAssetType, ESnapshotStatus } from '@/enums';
 import { CatnipAssetHolder } from '@usecases/project/project.input';
+import { IsEmail, IsOptional } from 'class-validator';
 
 export type UserDocument = HydratedDocument<UserProject>;
 
@@ -92,6 +93,12 @@ export class UserProject {
 
   @Prop({ type: Array, required: false })
   nfts_with_price?: NftAssetWithPrice[];
+
+  @ApiProperty({ type: String, required: false })
+  @Prop({ type: String, required: false })
+  @IsOptional()
+  @IsEmail()
+  notification_email?: string;
 }
 
 export const UserProjectSchema = SchemaFactory.createForClass(UserProject);

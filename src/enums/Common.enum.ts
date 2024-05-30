@@ -19,4 +19,19 @@ enum ETxVerifyStatus {
   ON_CHAIN_VERIFY = 'on_chain_verify',
 }
 
-export { ESchedulerType, EDefultResponseStatus, ETokenType, ETxVerifyStatus };
+enum EEmailType {
+  PROJECT_REGISTERED = 'PROJECT_REGISTERED',
+}
+
+enum EOnChainNetwork {
+  SOLANA = 'solana',
+}
+
+export {
+  ESchedulerType,
+  EDefultResponseStatus,
+  ETokenType,
+  ETxVerifyStatus,
+  EEmailType,
+  EOnChainNetwork,
+};

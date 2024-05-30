@@ -16,6 +16,7 @@ import {
   UserProject,
 } from '@/schemas/user_project.schema';
 import {
+  EOnChainNetwork,
   EProjectParticipationStatus,
   EProjectProgressStatus,
   EProjectStatus,
@@ -40,6 +41,7 @@ import { InvestingHistory } from '@schemas/investing_histories.schema';
 import { NftService } from '@/services/nft/nft.service';
 import { StreamFlowService } from '@/services/streamflow/streamflow.service';
 import { ProjectVesting } from '@schemas/project_vesting.schema';
+import { UserService } from '@/services/user/user.service';
 
 dayjs.extend(utc);
 
@@ -64,6 +66,8 @@ export class ProjectService {
     private readonly nftService: NftService,
     @Inject(StreamFlowService)
     private readonly streamFlowService: StreamFlowService,
+    @Inject(UserService)
+    private readonly userService: UserService,
   ) {}
 
   async create(project: Project): Promise<Project> {
@@ -271,11 +275,14 @@ export class ProjectService {
     return !!result?._id;
   }
 
-  async findProjectById(id: string): Promise<Project | null> {
-    const result = await this.projectModel.findOne({
+  async findProjectById(id: string): Promise<Project> {
+    const project = await this.projectModel.findOne({
       id,
     });
-    return result;
+    if (!project || project.status !== EProjectStatus.ACTIVE) {
+      throw new NotFoundException('Project not found');
+    }
+    return JSON.parse(JSON.stringify(project)) as Project;
   }
 
   async findProjectBySlug(
@@ -325,19 +332,20 @@ export class ProjectService {
       currency: tokens ? tokens?.[0]?.symbol : projectInfo?.price?.currency,
       ...(tokens ? { currency_address: tokens?.[0]?.address } : {}),
     };
-
     if (wallet) {
-      const [myUserProject, aggregateUserRegisterProjectResult] =
+      const [myUserProject, aggregateUserRegisterProjectResult, user] =
         await Promise.all([
           this.userProjectModel.findOne({
             project_id: String(project.id),
             user_id: wallet,
           }),
           this.aggregateUsersProjectAssets(String(project?.id)),
+          this.userService.findUserByWallet(wallet, EOnChainNetwork.SOLANA),
         ]);
       if (myUserProject) projectDetail.is_applied = true;
       if (aggregateUserRegisterProjectResult)
         projectDetail.users_assets = aggregateUserRegisterProjectResult;
+      if (user?.email) projectDetail.notification_email = user?.email;
     } else {
       const aggregateUserRegisterProjectResult =
         await this.aggregateUsersProjectAssets(String(project?.id));
