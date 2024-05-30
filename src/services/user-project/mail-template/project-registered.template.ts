@@ -117,18 +117,22 @@ const PROJECT_REGISTERED_TMP = {
       " 
     > 
       Our community: 
-      <div 
-        style=" 
+        <div style=" 
           inline-block; padding: 20px 0; 
-        " 
-      > 
-        <div style="display:inline-block; width: 48%;"> 
-          <a href="{{TWITTER_LINK}}"><img width="30" src="{{AWS_S3_BUCKET_URL}}/public/images/mail/X.png" /></a> 
-          <a href="{{DISCORD_LINK}}" style="margin-left: 10px;" ><img width="40" style="margin-bottom: -5px;" src="{{AWS_S3_BUCKET_URL}}/public/images/mail/discord.png" /></a> 
-        </div> 
-        <div style="display: inline-block; width:48%; text-align: end; margin-bottom: -20px;"> 
-          <img height="50" style="height: 50px; margin-bottom: -10px;" src="{{AWS_S3_BUCKET_URL}}/public/images/mail/Layer_1.png" /> 
-        </div> 
+        "> 
+      <div style="display: inline-block; width: 48%"> 
+        <a href="{{TWITTER_LINK}}"><img width="40" src="{{AWS_S3_BUCKET_URL}}/public/images/mail/Twitter.png" /></a> 
+        <a href="{{DISCORD_LINK}}" style="margin-left: 10px"><img width="40" src="{{AWS_S3_BUCKET_URL}}/public/images/mail/Discord.png" /></a> 
+      </div> 
+      <div style=" 
+            display: inline-block; 
+            width: 48%; 
+            text-align: end; 
+            margin-bottom: -20px; 
+          "> 
+        <img height="50" style="margin-bottom: -10px" src="{{AWS_S3_BUCKET_URL}}/public/images/mail/Layer_1.png" /> 
+      </div> 
+    </div>
       </div> 
     </div>
   <p style="color: gray; text-align: center">
