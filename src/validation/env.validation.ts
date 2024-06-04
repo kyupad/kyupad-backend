@@ -24,6 +24,7 @@ const envSchema = Joi.object({
   PREFER_ENCRYPT_TOKEN: Joi.string().required(),
   RPC_ENDPOINT: Joi.string().required(),
   AWS_SES_SENDER: Joi.string().required(),
+  API_KEY: Joi.string().required(),
 });
 
 export { envSchema };

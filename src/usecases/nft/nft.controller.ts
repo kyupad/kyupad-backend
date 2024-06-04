@@ -28,6 +28,7 @@ import { ClsService } from 'nestjs-cls';
 import { JwtService } from '@nestjs/jwt';
 import {
   GenerateCnftMetaDataBody,
+  GenerateCnftMetaDataPrivateBody,
   GenerateCnftMetadataResponse,
 } from './nft.type';
 import { isEmpty } from '@/helpers';
@@ -90,7 +91,42 @@ export class NftController {
       const userInfo = this.jwtService.decode(accessToken) as any;
       wallet = userInfo?.sub;
     }
+    if (!wallet) throw new BadRequestException('wallet is required');
     const result = await this.nftService.generateCNftMetaData(body, wallet);
+
+    return {
+      statusCode: 200,
+      data: result,
+    };
+  }
+
+  @Post('/metadata-private')
+  @ApiBody({ type: GenerateCnftMetaDataPrivateBody })
+  @ApiOkResponse({ type: GenerateCnftMetadataResponse })
+  @ApiBadRequestResponse({ description: 'Bad Request' })
+  @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
+  async uploadPrivateMetadata(
+    @Body() body: GenerateCnftMetaDataPrivateBody,
+  ): Promise<GenerateCnftMetadataResponse> {
+    if (!body.api_key || body.api_key !== process.env.API_KEY) {
+      throw new UnauthorizedException();
+    }
+    if (isEmpty(body)) {
+      throw new BadRequestException('body is empty');
+    }
+
+    if (!body?.id) {
+      throw new BadRequestException('id is required');
+    }
+
+    if (typeof body?.seller_fee_basis_points !== 'number') {
+      throw new BadRequestException('seller_fee_basis_points is required');
+    }
+    if (!body?.wallet) throw new BadRequestException('wallet is required');
+    const result = await this.nftService.generateCNftMetaData(
+      body,
+      body.wallet,
+    );
 
     return {
       statusCode: 200,

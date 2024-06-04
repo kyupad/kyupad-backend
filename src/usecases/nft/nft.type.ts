@@ -14,6 +14,14 @@ class GenerateCnftMetaDataBody {
   ref_code?: string;
 }
 
+class GenerateCnftMetaDataPrivateBody extends GenerateCnftMetaDataBody {
+  @ApiProperty({ required: true })
+  api_key: string;
+
+  @ApiProperty({ required: true })
+  wallet: string;
+}
+
 class GenerateCnftMetadataResult {
   @ApiProperty()
   url: string;
@@ -36,4 +44,5 @@ export {
   GenerateCnftMetaDataBody,
   GenerateCnftMetadataResponse,
   GenerateCnftMetadataResult,
+  GenerateCnftMetaDataPrivateBody,
 };
