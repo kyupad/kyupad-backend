@@ -387,6 +387,7 @@ export class ProjectController {
       const userInfo = this.jwtService.decode(accessToken) as any;
       wallet = userInfo?.sub;
     }
+    wallet = '5ifW9hTbfGQCtutGcmaV35Rw4h6ZVS8Yi3y1gXuL6BZn';
     if (!wallet) throw new UnauthorizedException();
     const data = await this.projectService.myVesting(
       wallet,

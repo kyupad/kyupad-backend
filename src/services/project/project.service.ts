@@ -760,10 +760,13 @@ export class ProjectService {
         is_tge: false,
         stream_id: linearStream.stream_id,
         project__id: String(project._id),
-        start_at: new Date(
-          new Date(linearStream.start_at).getTime() +
-            linearStream.period * 1000,
-        ).toISOString(),
+        start_at:
+          linearStream.cliff_amount && linearStream.cliff_amount > 0
+            ? new Date(linearStream.start_at).toISOString()
+            : new Date(
+                new Date(linearStream.start_at).getTime() +
+                  linearStream.period * 1000,
+              ).toISOString(),
         end_at: linearStream.end_at,
         sender: linearStream.sender,
         recipient: linearStream.recipient,
