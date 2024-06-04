@@ -775,7 +775,7 @@ export class ProjectService {
         token: linearStream.token,
         vesting_schedule: (() => {
           const arrLength =
-            (linearStream?.total_amount || 0) /
+            ((linearStream?.total_amount || 0) - linearStream.cliff_amount) /
             (linearStream?.amount_per_period || 1);
           const data = Array(arrLength || 0)
             .fill(0)
