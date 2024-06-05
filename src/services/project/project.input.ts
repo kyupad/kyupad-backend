@@ -1,3 +1,5 @@
+import { EIdoAction } from '@/enums';
+
 interface ICatnipAssetsSnapshotBody {
   user_registration_id: string;
   project_id: string;
@@ -5,4 +7,14 @@ interface ICatnipAssetsSnapshotBody {
   season_id: string;
 }
 
-export { ICatnipAssetsSnapshotBody };
+class AppsyncIdoActionInput {
+  input: {
+    action_type: EIdoAction;
+    project__id: string;
+    invested_total: string;
+    invested_wallet: string;
+    action_at: string;
+  };
+}
+
+export { ICatnipAssetsSnapshotBody, AppsyncIdoActionInput };

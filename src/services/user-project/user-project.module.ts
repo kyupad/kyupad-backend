@@ -14,6 +14,8 @@ import {
 } from '@schemas/investing_histories.schema';
 import { SesServiceModule } from '@/services/aws/ses/ses.module';
 import { UserServiceModule } from '@/services/user/user.module';
+import { AppsyncService } from '@/services/aws/appsync/appsync.service';
+import { AppsyncServiceModule } from '@/services/aws/appsync/appsync.module';
 
 @Module({
   imports: [
@@ -28,7 +30,8 @@ import { UserServiceModule } from '@/services/user/user.module';
     ProjectInvestingInfoModule,
     FungibleTokensModule,
     SesServiceModule,
-    UserServiceModule
+    UserServiceModule,
+    AppsyncServiceModule,
   ],
   providers: [UserProjectService],
   exports: [UserProjectService],

@@ -45,7 +45,6 @@ import {
 import {
   MyVestingQuery,
   SyncInvestingBySignatureInput,
-  UserRegistrationQuery,
 } from '@usecases/project/project.input';
 import { DefaultResponse } from '@/interfaces/common.interface';
 
@@ -264,12 +263,9 @@ export class ProjectController {
   @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
   async userRegistrationInfo(
     @Param('slug') slug: string,
-    @Query() query: UserRegistrationQuery,
   ): Promise<UserProjectRegistrationResponse> {
     const accessToken = this.cls.get('accessToken');
-    //FIXME: Mock
-    let wallet = query?.wallet;
-
+    let wallet;
     if (accessToken) {
       const userInfo = this.jwtService.decode(accessToken) as any;
       wallet = userInfo?.sub;

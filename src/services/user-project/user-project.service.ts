@@ -11,9 +11,13 @@ import { InjectConnection, InjectModel } from '@nestjs/mongoose';
 import mongoose, { AnyBulkWriteOperation, Model } from 'mongoose';
 import { AwsSQSService } from '@/services/aws/sqs/sqs.service';
 import { ProjectService } from '@/services/project/project.service';
-import { ICatnipAssetsSnapshotBody } from '@/services/project/project.input';
+import {
+  AppsyncIdoActionInput,
+  ICatnipAssetsSnapshotBody,
+} from '@/services/project/project.input';
 import { SeasonService } from '@/services/season/season.service';
 import {
+  EIdoAction,
   EOnChainNetwork,
   EProjectProgressStatus,
   EProjectStatus,
@@ -45,6 +49,8 @@ import { PROJECT_REGISTERED_TMP } from '@/services/user-project/mail-template/pr
 import { ConfigService } from '@nestjs/config';
 import { SeSService } from '@/services/aws/ses/ses.service';
 import { UserService } from '@/services/user/user.service';
+import { IDO_ACTION_SCHEMA } from '@/services/project/Project.appsyncschema';
+import { AppsyncService } from '@/services/aws/appsync/appsync.service';
 
 interface IGlobalCacheHolder {
   last_update_time?: number;
@@ -78,6 +84,8 @@ export class UserProjectService {
     private readonly sesService: SeSService,
     @Inject(UserService)
     private readonly userService: UserService,
+    @Inject(AppsyncService)
+    private readonly appsyncService: AppsyncService,
   ) {}
 
   async create(input: UserProject): Promise<UserProject> {
@@ -315,8 +323,13 @@ export class UserProjectService {
     ]);
 
     const [userProject, investingInfo] = result;
-    const { total_winner, total_owner_winning_tickets, used_ticket } =
-      userProject;
+    const {
+      total_winner,
+      total_owner_winning_tickets,
+      used_ticket,
+      all_used_ticket,
+      total_ticket,
+    } = userProject;
 
     info.investment_info = {
       currency: tokens ? tokens?.[0]?.symbol : projectInfo?.price?.currency,
@@ -327,6 +340,8 @@ export class UserProjectService {
       total_owner_winning_tickets,
       tickets_used: used_ticket,
       destination_wallet: investingInfo?.destination_wallet || '',
+      total_invested: all_used_ticket,
+      total_ticket,
     };
     if (
       projectInfo.p_user_status ===
@@ -389,6 +404,15 @@ export class UserProjectService {
         };
       }
     }
+    if (
+      info.investment_info?.total_invested ===
+      info.investment_info?.total_ticket
+    ) {
+      info.investment_info = {
+        ...info.investment_info,
+        is_active: false,
+      };
+    }
   }
 
   async generateInvestOffChainId(
@@ -431,59 +455,95 @@ export class UserProjectService {
   ): Promise<{
     total_owner_winning_tickets: number;
     total_winner: number;
+    total_ticket: number;
     used_ticket: number;
+    all_used_ticket: number;
   }> {
-    const [myUserProjects, totalTicketUserProject] = await Promise.all([
-      this.userProjectModel.aggregate([
-        {
-          $match: {
-            project_id: projectId,
-            user_id: wallet,
+    const [myUserProjects, totalTicketUserProjectAgg, totalInvestedTicketAgg] =
+      await Promise.all([
+        this.userProjectModel.aggregate([
+          {
+            $match: {
+              project_id: projectId,
+              user_id: wallet,
+            },
           },
-        },
-        {
-          $lookup: {
-            from: 'investinghistories',
-            let: { uId: '$user_id' },
-            pipeline: [
-              {
-                $match: {
-                  $expr: {
-                    $and: [
-                      {
-                        $eq: ['$project_id', project_Id],
-                      },
-                      {
-                        $eq: ['$wallet', '$$uId'],
-                      },
-                      {
-                        $ne: ['$verify_status', ETxVerifyStatus.NOT_VERIFY],
-                      },
-                    ],
+          {
+            $lookup: {
+              from: 'investinghistories',
+              let: { uId: '$user_id' },
+              pipeline: [
+                {
+                  $match: {
+                    $expr: {
+                      $and: [
+                        {
+                          $eq: ['$project_id', project_Id],
+                        },
+                        {
+                          $eq: ['$wallet', '$$uId'],
+                        },
+                        {
+                          $ne: ['$verify_status', ETxVerifyStatus.NOT_VERIFY],
+                        },
+                      ],
+                    },
                   },
                 },
+              ],
+              as: 'investing_history',
+            },
+          },
+          {
+            $project: {
+              _id: 1,
+              total_ticket: 1,
+              project_id: 1,
+              user_id: 1,
+              investing_history: 1,
+            },
+          },
+        ]),
+        this.userProjectModel.aggregate([
+          {
+            $match: {
+              project_id: projectId,
+              total_ticket: {
+                $gt: 0,
               },
-            ],
-            as: 'investing_history',
+            },
           },
-        },
-        {
-          $project: {
-            _id: 1,
-            total_ticket: 1,
-            project_id: 1,
-            user_id: 1,
-            investing_history: 1,
+          {
+            $group: {
+              _id: null,
+              winners: {
+                $sum: 1,
+              },
+              tickets: {
+                $sum: '$total_ticket',
+              },
+            },
           },
-        },
-      ]),
-      this.userProjectModel.countDocuments({
-        project_id: projectId,
-        total_ticket: {
-          $gt: 0,
-        },
-      }),
-    ]);
+        ]),
+        this.investingHistoryModel.aggregate([
+          {
+            $match: {
+              project_id: project_Id,
+              verify_status: {
+                $ne: ETxVerifyStatus.NOT_VERIFY,
+              },
+            },
+          },
+          {
+            $group: {
+              _id: null,
+              total_ticket: {
+                $sum: { $ifNull: ['$total', '$on_chain_total'] },
+              },
+            },
+          },
+        ]),
+      ]);
     if (!myUserProjects || myUserProjects.length === 0)
       throw new NotFoundException('User project not found');
     const myUserProject = myUserProjects[0] as {
@@ -495,18 +555,22 @@ export class UserProjectService {
         _id: string;
         project_id: string;
         total: number;
+        on_chain_total: number;
       }[];
     };
     const usedTickets = (myUserProject?.investing_history || []).reduce(
-      (n, { total }) => n + total,
+      (n, { total, on_chain_total }) => n + (total || on_chain_total),
       0,
     );
+    const totalInvestedTicket = totalInvestedTicketAgg[0].total_ticket;
     return {
       total_owner_winning_tickets: myUserProject
         ? myUserProject.total_ticket || 0
         : 0,
-      total_winner: totalTicketUserProject | 0,
+      total_winner: totalTicketUserProjectAgg[0].winners | 0,
+      total_ticket: totalTicketUserProjectAgg[0].tickets | 0,
       used_ticket: usedTickets || 0,
+      all_used_ticket: totalInvestedTicket || 0,
     };
   }
 
@@ -516,6 +580,7 @@ export class UserProjectService {
   ): Promise<void> {
     if (authorization !== process.env.HELIUS_WEBHOOK_TOKEN) return;
     const bulkData: AnyBulkWriteOperation<InvestingHistory>[] = [];
+    const appsyncInvestedData: AppsyncIdoActionInput[] = [];
     transactions.forEach((transaction) => {
       let signature = 'UNKNOWN';
       try {
@@ -548,6 +613,15 @@ export class UserProjectService {
                   upsert: true,
                 },
               });
+              appsyncInvestedData.push({
+                input: {
+                  action_type: EIdoAction.INVESTED,
+                  project__id: projectId,
+                  invested_wallet: owner,
+                  invested_total: total,
+                  action_at: new Date().toISOString(),
+                },
+              });
             }
           }
         }
@@ -559,7 +633,29 @@ export class UserProjectService {
     });
     if (bulkData.length > 0) {
       await this.investingHistoryModel.bulkWrite(bulkData);
+      await Promise.all(
+        appsyncInvestedData.map(async (appSyncInput) => {
+          await this.pushInvestedAction(appSyncInput);
+        }),
+      );
     }
+  }
+
+  async pushInvestedAction(input: AppsyncIdoActionInput): Promise<void> {
+    IDO_ACTION_SCHEMA.variables = {
+      input: {
+        ...input.input,
+      },
+    };
+    await this.appsyncService.query<AppsyncIdoActionInput, any>(
+      IDO_ACTION_SCHEMA,
+      {
+        cls: AppsyncIdoActionInput,
+        plain: true,
+        functionName: IDO_ACTION_SCHEMA.operationName,
+        passError: true,
+      },
+    );
   }
 
   async sendRegisteredEmail(

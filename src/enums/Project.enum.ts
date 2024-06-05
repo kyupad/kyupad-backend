@@ -60,6 +60,11 @@ enum EAmountPeriodType {
   TOKEN = 'token',
 }
 
+enum EIdoAction {
+  INVESTED = 'INVESTED',
+  REFUNDED = 'REFUNDED',
+}
+
 export {
   EProjectType,
   EProjectSalePool,
@@ -71,4 +76,5 @@ export {
   EProjectParticipationStatus,
   EVestingType,
   EAmountPeriodType,
+  EIdoAction,
 };

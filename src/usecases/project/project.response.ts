@@ -43,6 +43,16 @@ class UserProjectInvestmentInfo {
   token_offered: number;
 
   @ApiProperty({
+    type: Number,
+  })
+  total_ticket: number;
+
+  @ApiProperty({
+    type: Number,
+  })
+  total_invested: number;
+
+  @ApiProperty({
     type: String,
   })
   destination_wallet?: string;
