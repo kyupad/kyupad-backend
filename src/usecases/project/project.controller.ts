@@ -1,4 +1,4 @@
-import { EProjectType } from '@/enums';
+import { EIdoAction, EProjectType } from '@/enums';
 import { ProjectService } from '@/services/project/project.service';
 import {
   BadRequestException,
@@ -13,14 +13,15 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import {
-  ApiQuery,
-  ApiOkResponse,
-  ApiTags,
-  ApiOperation,
   ApiBadRequestResponse,
+  ApiBody,
+  ApiCreatedResponse,
   ApiInternalServerErrorResponse,
   ApiNotFoundResponse,
-  ApiCreatedResponse,
+  ApiOkResponse,
+  ApiOperation,
+  ApiQuery,
+  ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import {
@@ -45,8 +46,10 @@ import {
 import {
   MyVestingQuery,
   SyncInvestingBySignatureInput,
+  TestInvestedAppSyncInput,
 } from '@usecases/project/project.input';
 import { DefaultResponse } from '@/interfaces/common.interface';
+import { TestAppsyncInput } from '@usecases/nft/nft.input';
 
 @Controller()
 @ApiTags('project')
@@ -395,17 +398,34 @@ export class ProjectController {
     };
   }
 
-  // @Post('/test-mail')
-  // @ApiOkResponse({ type: DefaultResponse })
-  // @ApiUnauthorizedResponse({ description: 'Unauthorized' })
-  // @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
-  // async testEmail(@Body() input: EmailTestInput): Promise<DefaultResponse> {
-  //   await this.projectService.testEmail(input.email);
-  //   return {
-  //     statusCode: HttpStatus.OK,
-  //     data: {
-  //       status: 'SUCCESS',
-  //     },
-  //   };
-  // }
+  @Post('/test-invested-appsync')
+  @ApiBody({ type: TestInvestedAppSyncInput })
+  @ApiOkResponse({ type: DefaultResponse })
+  @ApiBadRequestResponse({ description: 'Bad Request' })
+  @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
+  async pushInvestedAction(
+    @Body() input: TestInvestedAppSyncInput,
+  ): Promise<DefaultResponse> {
+    if (process.env.STAGE !== 'dev')
+      return {
+        statusCode: 200,
+        data: {
+          status: 'SUCCESS',
+        },
+      };
+    else
+      await this.userProjectService.pushInvestedAction({
+        input: {
+          ...input,
+          action_type: EIdoAction.INVESTED,
+          action_at: new Date().toISOString(),
+        },
+      });
+    return {
+      statusCode: 200,
+      data: {
+        status: 'SUCCESS',
+      },
+    };
+  }
 }

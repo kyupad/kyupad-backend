@@ -618,7 +618,7 @@ export class UserProjectService {
                   action_type: EIdoAction.INVESTED,
                   project__id: projectId,
                   invested_wallet: owner,
-                  invested_total: total,
+                  invested_total: Number(total),
                   action_at: new Date().toISOString(),
                 },
               });

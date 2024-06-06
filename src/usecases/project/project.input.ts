@@ -120,6 +120,17 @@ class EmailTestInput {
   email: string;
 }
 
+class TestInvestedAppSyncInput {
+  @ApiProperty({ type: String })
+  project__id: string;
+
+  @ApiProperty({ type: Number })
+  invested_total: number;
+
+  @ApiProperty({ type: String })
+  invested_wallet: string;
+}
+
 export {
   CatnipAssetHolder,
   UserRegistrationQuery,
@@ -128,4 +139,5 @@ export {
   VestingScheduleInput,
   MyVestingQuery,
   EmailTestInput,
+  TestInvestedAppSyncInput,
 };

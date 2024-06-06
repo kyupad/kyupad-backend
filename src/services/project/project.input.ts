@@ -11,7 +11,7 @@ class AppsyncIdoActionInput {
   input: {
     action_type: EIdoAction;
     project__id: string;
-    invested_total: string;
+    invested_total: number;
     invested_wallet: string;
     action_at: string;
   };
