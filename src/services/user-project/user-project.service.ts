@@ -562,7 +562,7 @@ export class UserProjectService {
       (n, { total, on_chain_total }) => n + (total || on_chain_total),
       0,
     );
-    const totalInvestedTicket = totalInvestedTicketAgg[0].total_ticket;
+    const totalInvestedTicket = totalInvestedTicketAgg[0]?.total_ticket;
     return {
       total_owner_winning_tickets: myUserProject
         ? myUserProject.total_ticket || 0
