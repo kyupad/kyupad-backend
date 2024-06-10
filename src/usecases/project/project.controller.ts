@@ -49,7 +49,6 @@ import {
   TestInvestedAppSyncInput,
 } from '@usecases/project/project.input';
 import { DefaultResponse } from '@/interfaces/common.interface';
-import { TestAppsyncInput } from '@usecases/nft/nft.input';
 
 @Controller()
 @ApiTags('project')

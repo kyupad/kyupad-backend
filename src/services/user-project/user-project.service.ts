@@ -328,7 +328,6 @@ export class UserProjectService {
       total_owner_winning_tickets,
       used_ticket,
       all_used_ticket,
-      total_ticket,
     } = userProject;
 
     info.investment_info = {
@@ -341,7 +340,7 @@ export class UserProjectService {
       tickets_used: used_ticket,
       destination_wallet: investingInfo?.destination_wallet || '',
       total_invested: all_used_ticket,
-      total_ticket,
+      total_ticket: projectInfo.info.ticket_total,
     };
     if (
       projectInfo.p_user_status ===
@@ -455,7 +454,6 @@ export class UserProjectService {
   ): Promise<{
     total_owner_winning_tickets: number;
     total_winner: number;
-    total_ticket: number;
     used_ticket: number;
     all_used_ticket: number;
   }> {
@@ -519,9 +517,6 @@ export class UserProjectService {
               winners: {
                 $sum: 1,
               },
-              tickets: {
-                $sum: '$total_ticket',
-              },
             },
           },
         ]),
@@ -568,7 +563,6 @@ export class UserProjectService {
         ? myUserProject.total_ticket || 0
         : 0,
       total_winner: totalTicketUserProjectAgg[0].winners | 0,
-      total_ticket: totalTicketUserProjectAgg[0].tickets | 0,
       used_ticket: usedTickets || 0,
       all_used_ticket: totalInvestedTicket || 0,
     };

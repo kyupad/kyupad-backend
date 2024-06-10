@@ -60,6 +60,10 @@ class Info {
   @ApiProperty({ default: 100000000 })
   @Prop({ required: true, type: mongoose.Schema.Types.Number })
   token_offered: number; // field
+
+  @Prop({ required: true, type: mongoose.Schema.Types.Number })
+  @Expose()
+  ticket_total: number;
 }
 
 class TokenInfo {
