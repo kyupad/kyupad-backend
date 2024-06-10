@@ -1,4 +1,4 @@
-import { EProjectType } from '@/enums';
+import { EIdoAction, EProjectType } from '@/enums';
 import { ProjectService } from '@/services/project/project.service';
 import {
   BadRequestException,
@@ -13,18 +13,18 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import {
-  ApiQuery,
-  ApiOkResponse,
-  ApiTags,
-  ApiOperation,
   ApiBadRequestResponse,
+  ApiBody,
+  ApiCreatedResponse,
   ApiInternalServerErrorResponse,
   ApiNotFoundResponse,
-  ApiCreatedResponse,
+  ApiOkResponse,
+  ApiOperation,
+  ApiQuery,
+  ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import {
-  DetailProjectResponse,
   ListProjectQuery,
   ListProjectResponse,
   ListProjectResult,
@@ -37,6 +37,18 @@ import { JwtService } from '@nestjs/jwt';
 import { UserProjectService } from '@/services/user-project/user-project.service';
 import { plainToInstance } from 'class-transformer';
 import { Project } from '@schemas/project.schema';
+import {
+  MyInvestedResponse,
+  MyVestingResponse,
+  ProjectDetailResponse,
+  UserProjectRegistrationResponse,
+} from '@usecases/project/project.response';
+import {
+  MyVestingQuery,
+  SyncInvestingBySignatureInput,
+  TestInvestedAppSyncInput,
+} from '@usecases/project/project.input';
+import { DefaultResponse } from '@/interfaces/common.interface';
 
 @Controller()
 @ApiTags('project')
@@ -56,6 +68,8 @@ export class ProjectController {
   @ApiBadRequestResponse({ description: 'Bad Request' })
   @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
   @ApiQuery({ enum: EProjectType, name: 'type', required: true })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  @ApiQuery({ name: 'page', required: false, type: Number })
   async list(@Query() query: ListProjectQuery): Promise<ListProjectResponse> {
     if (!query?.type) {
       throw new BadRequestException('type is required');
@@ -63,35 +77,79 @@ export class ProjectController {
 
     if (
       query?.type !== EProjectType.success &&
-      query?.type !== EProjectType.upcoming
+      query?.type !== EProjectType.upcoming &&
+      query?.type !== EProjectType.furture
     ) {
       throw new BadRequestException('type is invalid');
     }
 
-    if (query?.type === EProjectType.success) {
-      const success = await this.projectService.listSuccess();
-      const r = [...JSON.parse(JSON.stringify(success))];
+    if (query?.type === EProjectType.furture) {
+      const furture = await this.projectService.listFurture({
+        limit: query?.limit,
+        page: query?.page,
+      });
+
+      const r = [...JSON.parse(JSON.stringify(furture?.data || []))];
       const result = plainToInstance(
         Project,
         r,
       ) as unknown as ListProjectResult[];
       return {
         statusCode: 200,
-        data: result,
+        data: {
+          projects: result,
+          pagination: {
+            total: Math.ceil(furture.totalCount / (query?.limit || 1)),
+            page: Number(query?.page) || 1,
+          },
+        },
+      };
+    }
+
+    if (query?.type === EProjectType.success) {
+      const success = await this.projectService.listSuccess({
+        limit: query?.limit,
+        page: query?.page,
+      });
+
+      const r = [...JSON.parse(JSON.stringify(success?.data || []))];
+      const result = plainToInstance(
+        Project,
+        r,
+      ) as unknown as ListProjectResult[];
+      return {
+        statusCode: 200,
+        data: {
+          projects: result,
+          pagination: {
+            total: Math.ceil(success.totalCount / (query?.limit || 3)),
+            page: Number(query?.page) || 1,
+          },
+        },
       };
     }
 
     if (query?.type === EProjectType.upcoming) {
-      const upcoming = await this.projectService.listUpcoming();
+      const upcoming = await this.projectService.listUpcoming({
+        limit: query?.limit,
+        page: query?.page,
+      });
 
-      const r = [...JSON.parse(JSON.stringify(upcoming))];
+      const r = [...JSON.parse(JSON.stringify(upcoming?.data || []))];
+
       const result = plainToInstance(
         Project,
         r,
       ) as unknown as ListProjectResult[];
       return {
         statusCode: 200,
-        data: result,
+        data: {
+          projects: result,
+          pagination: {
+            total: Math.ceil(upcoming.totalCount / (query?.limit || 3)),
+            page: Number(query?.page) || 1,
+          },
+        },
       };
     }
 
@@ -104,47 +162,21 @@ export class ProjectController {
   @Get(':slug')
   @ApiOperation({ summary: 'Detail Project' })
   @ApiNotFoundResponse({ description: 'Project not found' })
-  @ApiOkResponse({ type: DetailProjectResponse })
+  @ApiOkResponse({ type: ProjectDetailResponse })
   @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
-  async detail(@Param('slug') slug: string): Promise<DetailProjectResponse> {
-    const result = await this.projectService.findBySlug(slug);
-
-    if (!result) {
-      throw new NotFoundException('Project not found');
-    }
-
+  async detail(@Param('slug') slug: string): Promise<ProjectDetailResponse> {
     const accessToken = this.cls.get('accessToken');
+    let wallet;
 
     if (accessToken) {
       const userInfo = this.jwtService.decode(accessToken) as any;
-
-      if (userInfo?.sub) {
-        const isApplied = await this.userProjectService.isApplied(
-          userInfo.sub,
-          result.id,
-        );
-
-        if (isApplied) {
-          return {
-            statusCode: 200,
-            data: {
-              project: plainToInstance(
-                Project,
-                JSON.parse(JSON.stringify(result)),
-              ),
-              is_applied: isApplied,
-            },
-          };
-        }
-      }
+      wallet = userInfo?.sub;
     }
+    const project = await this.projectService.detail(slug, wallet);
 
     return {
       statusCode: HttpStatus.OK,
-      data: {
-        project: plainToInstance(Project, JSON.parse(JSON.stringify(result))),
-        is_applied: false,
-      },
+      data: project,
     };
   }
 
@@ -174,6 +206,7 @@ export class ProjectController {
         project_id,
         user_id: userInfo.sub,
         is_applied: true,
+        notification_email: body?.notification_email,
       });
     }
 
@@ -216,11 +249,182 @@ export class ProjectController {
       project_id,
       user_id: body.user_id || 'NONE',
       is_applied: true,
+      notification_email: body?.notification_email,
     });
 
     return {
       statusCode: HttpStatus.CREATED,
       data: [{ project_id }],
+    };
+  }
+
+  @Get(':slug/registration-detail')
+  @ApiOperation({ summary: 'Info of user registration' })
+  @ApiNotFoundResponse({ description: 'Registration info not found' })
+  @ApiOkResponse({ type: UserProjectRegistrationResponse })
+  @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
+  async userRegistrationInfo(
+    @Param('slug') slug: string,
+  ): Promise<UserProjectRegistrationResponse> {
+    const accessToken = this.cls.get('accessToken');
+    let wallet;
+    if (accessToken) {
+      const userInfo = this.jwtService.decode(accessToken) as any;
+      wallet = userInfo?.sub;
+    }
+    const projectRegistrationInfo =
+      await this.userProjectService.projectRegistrationInfo(slug, wallet);
+
+    return {
+      statusCode: HttpStatus.OK,
+      data: projectRegistrationInfo,
+    };
+  }
+
+  // @Post('/generate-investing-id')
+  // @ApiOkResponse({ type: GenerateInvestingOffChainIdResponse })
+  // @ApiUnauthorizedResponse({ description: 'Unauthorized' })
+  // @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
+  // async generateInvestOffChainId(
+  //   @Body() input: GenerateInvestingIdInput,
+  // ): Promise<GenerateInvestingOffChainIdResponse> {
+  //   const accessToken = this.cls.get('accessToken');
+  //   let wallet;
+  //
+  //   if (accessToken) {
+  //     const userInfo = this.jwtService.decode(accessToken) as any;
+  //     wallet = userInfo?.sub;
+  //   }
+  //   if (!wallet) throw new UnauthorizedException();
+  //   const id = await this.userProjectService.generateInvestOffChainId(
+  //     wallet,
+  //     input.invest_total,
+  //     input.project_id,
+  //   );
+  //   return {
+  //     statusCode: HttpStatus.OK,
+  //     data: {
+  //       id,
+  //     },
+  //   };
+  // }
+
+  @Post('/sync-investing-by-signature')
+  @ApiOkResponse({ type: DefaultResponse })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized' })
+  @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
+  async syncInvestingBySignature(
+    @Body() input: SyncInvestingBySignatureInput,
+  ): Promise<DefaultResponse> {
+    const accessToken = this.cls.get('accessToken');
+    let wallet;
+
+    if (accessToken) {
+      const userInfo = this.jwtService.decode(accessToken) as any;
+      wallet = userInfo?.sub;
+    }
+    if (!wallet) throw new UnauthorizedException();
+    await this.userProjectService.syncInvestingBySignature(wallet, input);
+    return {
+      statusCode: HttpStatus.OK,
+      data: {
+        status: 'SUCCESS',
+      },
+    };
+  }
+
+  @Get('/my-invested')
+  @ApiNotFoundResponse({ description: 'Project not found' })
+  @ApiOkResponse({ type: MyInvestedResponse })
+  @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
+  async myInvested(): Promise<MyInvestedResponse> {
+    const accessToken = this.cls.get('accessToken');
+    let wallet;
+
+    if (accessToken) {
+      const userInfo = this.jwtService.decode(accessToken) as any;
+      wallet = userInfo?.sub;
+    }
+    const data = await this.projectService.myInvested(wallet);
+
+    return {
+      statusCode: HttpStatus.OK,
+      data,
+    };
+  }
+
+  @Get('/my-participation')
+  @ApiNotFoundResponse({ description: 'Project not found' })
+  @ApiOkResponse({ type: MyInvestedResponse })
+  @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
+  async myParticipation(): Promise<MyInvestedResponse> {
+    const accessToken = this.cls.get('accessToken');
+    let wallet;
+
+    if (accessToken) {
+      const userInfo = this.jwtService.decode(accessToken) as any;
+      wallet = userInfo?.sub;
+    }
+    const data = await this.projectService.myParticipation(wallet);
+
+    return {
+      statusCode: HttpStatus.OK,
+      data,
+    };
+  }
+
+  @Get('/my-vesting')
+  @ApiNotFoundResponse({ description: 'Project not found' })
+  @ApiOkResponse({ type: MyVestingResponse })
+  @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
+  async myVesting(@Query() query: MyVestingQuery): Promise<MyVestingResponse> {
+    const accessToken = this.cls.get('accessToken');
+    let wallet;
+
+    if (accessToken) {
+      const userInfo = this.jwtService.decode(accessToken) as any;
+      wallet = userInfo?.sub;
+    }
+    if (!wallet) throw new UnauthorizedException();
+    const data = await this.projectService.myVesting(
+      wallet,
+      query?.project_slug,
+    );
+
+    return {
+      statusCode: HttpStatus.OK,
+      data,
+    };
+  }
+
+  @Post('/test-invested-appsync')
+  @ApiBody({ type: TestInvestedAppSyncInput })
+  @ApiOkResponse({ type: DefaultResponse })
+  @ApiBadRequestResponse({ description: 'Bad Request' })
+  @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
+  async pushInvestedAction(
+    @Body() input: TestInvestedAppSyncInput,
+  ): Promise<DefaultResponse> {
+    if (process.env.STAGE !== 'dev')
+      return {
+        statusCode: 200,
+        data: {
+          status: 'SUCCESS',
+        },
+      };
+    else
+      await this.userProjectService.pushInvestedAction({
+        input: {
+          ...input,
+          action_type: EIdoAction.INVESTED,
+          action_at: new Date().toISOString(),
+        },
+      });
+    return {
+      statusCode: 200,
+      data: {
+        status: 'SUCCESS',
+      },
     };
   }
 }

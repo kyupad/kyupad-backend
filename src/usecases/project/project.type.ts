@@ -1,9 +1,15 @@
-import { withBaseResponse } from '@/interfaces/common.interface';
+import {
+  PaginationResponse,
+  withBaseResponse,
+} from '@/interfaces/common.interface';
 import { Project } from '@/schemas/project.schema';
 import { ApiProperty, OmitType } from '@nestjs/swagger';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import { EProjectType, EProjectVestingType } from '@/enums';
+import { Prop } from '@nestjs/mongoose';
+import { string } from 'joi';
+import { IsEmail, IsOptional, IsString } from 'class-validator';
 
 dayjs.extend(utc);
 
@@ -113,13 +119,22 @@ export class ListProjectResult extends OmitType(Project, [
   token_info: TokenInfo;
 }
 
-class ListProjectQuery {
-  type: EProjectType;
+class ListProjectResultWithPagination {
+  @ApiProperty({ isArray: true, type: ListProjectResult })
+  projects: ListProjectResult[];
+  @ApiProperty()
+  pagination: PaginationResponse;
 }
 
-class ListProjectResponse extends withBaseResponse(ListProjectResult, {
-  isArray: true,
-}) {}
+class ListProjectQuery {
+  type: EProjectType;
+  limit?: number;
+  page?: number;
+}
+
+class ListProjectResponse extends withBaseResponse(
+  ListProjectResultWithPagination,
+) {}
 
 class ProjectResult extends OmitType(Project, ['_id', 'assets']) {}
 
@@ -135,7 +150,13 @@ class DetailProjectResponse extends withBaseResponse(DetailProjectResult) {}
 
 class ProjectApplyBody {
   @ApiProperty()
+  @IsString()
   project_id: string;
+
+  @ApiProperty({ type: String, required: false })
+  @IsOptional()
+  @IsEmail()
+  notification_email?: string;
 }
 
 class ProjectApplyMockBody {
@@ -144,6 +165,11 @@ class ProjectApplyMockBody {
 
   @ApiProperty()
   user_id?: string;
+
+  @ApiProperty({ type: String, required: false })
+  @IsOptional()
+  @IsEmail()
+  notification_email?: string;
 }
 
 class ProjectApplyResponse extends withBaseResponse(ProjectApplyBody) {}

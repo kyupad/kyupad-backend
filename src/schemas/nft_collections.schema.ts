@@ -65,6 +65,10 @@ export class NftCollection {
 
   @Prop({ required: true, type: String })
   created_by?: string;
+
+  multi_pier?: number;
+
+  price_per_token?: number;
 }
 
 export const NftCollectionSchema = SchemaFactory.createForClass(NftCollection);

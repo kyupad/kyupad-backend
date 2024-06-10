@@ -5,7 +5,12 @@ import mongoose, { HydratedDocument } from 'mongoose';
 import utc from 'dayjs/plugin/utc';
 import { v4 as uuidv4 } from 'uuid';
 import { Exclude, Expose, Transform } from 'class-transformer';
-import { EProjectSalePool, EProjectStatus, EProjectVestingType } from '@/enums';
+import {
+  EProjectSalePool,
+  EProjectStatus,
+  EProjectVestingType,
+  EPUserStatus,
+} from '@/enums';
 import 'reflect-metadata';
 
 dayjs.extend(utc);
@@ -55,6 +60,10 @@ class Info {
   @ApiProperty({ default: 100000000 })
   @Prop({ required: true, type: mongoose.Schema.Types.Number })
   token_offered: number; // field
+
+  @Prop({ required: true, type: mongoose.Schema.Types.Number })
+  @Expose()
+  ticket_total: number;
 }
 
 class TokenInfo {
@@ -71,7 +80,7 @@ class TokenInfo {
     type: mongoose.Schema.Types.String,
     enum: EProjectVestingType,
   })
-  vesting_type: string; // field
+  vesting_type: EProjectVestingType; // field
 
   @Prop({ required: true, type: mongoose.Schema.Types.String })
   vesting_schedule: string;
@@ -83,7 +92,7 @@ class TokenInfo {
   article?: string; // field
 }
 
-class Timeline {
+export class Timeline {
   @Prop({ required: true, type: mongoose.Schema.Types.Date })
   registration_start_at: Date; // field
 
@@ -107,6 +116,9 @@ class Timeline {
 
   @Prop({ required: true, type: mongoose.Schema.Types.Date })
   claim_start_at: Date; // field
+
+  @Prop({ required: true, type: mongoose.Schema.Types.Date })
+  claim_end_at: Date; // field
 }
 
 class Price {
@@ -117,6 +129,9 @@ class Price {
   @ApiProperty({ default: 'USDT' })
   @Prop({ type: mongoose.Schema.Types.String })
   currency: string; // field
+
+  @ApiProperty({ required: false })
+  currency_address?: string; // field
 }
 
 export class Assets {
@@ -150,8 +165,8 @@ export class Project {
     required: true,
   })
   @Transform(({ value }) => {
-    if (value) {
-      const buffer = Buffer.from(value.data);
+    if (value?.data) {
+      const buffer = Buffer.from(value);
       const result = buffer.toString('hex');
       const uuid = `${result.slice(0, 8)}-${result.slice(8, 12)}-${result.slice(12, 16)}-${result.slice(16, 20)}-${result.slice(20)}`;
       return uuid;
@@ -245,6 +260,21 @@ export class Project {
     default: EProjectStatus.COLLECTION_PRICE_SNAPSHOT_PROCESSING,
   })
   status?: EProjectStatus;
+
+  @Prop({
+    type: String,
+    default: EPUserStatus.REGISTRATION_PROCESSING,
+  })
+  p_user_status?: EPUserStatus;
+
+  @Exclude()
+  registration_start_at_diff?: number;
+
+  @ApiProperty({ type: Number, required: false })
+  participants?: number;
+
+  @ApiProperty({ type: String, required: false, default: 'TBA' })
+  ath_roi?: string;
 }
 
 export const ProjectSchema = SchemaFactory.createForClass(Project);

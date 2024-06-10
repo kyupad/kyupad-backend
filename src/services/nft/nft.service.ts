@@ -30,6 +30,7 @@ import { AppsyncService } from '@/services/aws/appsync/appsync.service';
 import { AppsyncNftActionInput } from '@/services/nft/nft.input';
 import { NFT_ACTION_SCHEMA } from '@/services/nft/Nft.appsyncschema';
 import { EUserAction } from '@/enums';
+import { NftCollection } from '@schemas/nft_collections.schema';
 import { RefCode } from '@schemas/ref_code.schema';
 
 interface IGlobalCacheHolder {
@@ -48,6 +49,8 @@ export class NftService {
     private readonly nftWhiteListModel: Model<NftWhiteList>,
     @InjectModel(KyupadNft.name)
     private readonly kyupadNftModel: Model<KyupadNft>,
+    @InjectModel(NftCollection.name)
+    private readonly nftCollection: Model<NftCollection>,
     @InjectModel(RefCode.name)
     private readonly refCodeModel: Model<RefCode>,
     @Inject(SeasonService)
@@ -539,5 +542,16 @@ export class NftService {
     if (!refCodeInfo)
       throw new InternalServerErrorException('Cannot create ref code');
     return `${process.env.WEB_URL}/mint-nft?ref_code=${String(refCodeInfo._id)}`;
+  }
+
+  async getCollectionByListAddress(
+    addresses: string[],
+  ): Promise<NftCollection[]> {
+    const collections = await this.nftCollection.find({
+      address: {
+        $in: addresses,
+      },
+    });
+    return JSON.parse(JSON.stringify(collections || []));
   }
 }
