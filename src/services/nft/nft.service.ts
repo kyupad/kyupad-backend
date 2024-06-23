@@ -9,6 +9,7 @@ import { SeasonService } from '@/services/season/season.service';
 import { NftWhiteList } from '@schemas/nft_whitelists.schema';
 import { InjectConnection, InjectModel } from '@nestjs/mongoose';
 import mongoose, {
+  AnyBulkWriteOperation,
   FilterQuery,
   Model,
   PipelineStage,
@@ -33,6 +34,7 @@ import { NFT_ACTION_SCHEMA } from '@/services/nft/Nft.appsyncschema';
 import { EUserAction } from '@/enums';
 import { NftCollection } from '@schemas/nft_collections.schema';
 import { RefCode } from '@schemas/ref_code.schema';
+import { InvestingHistory } from '@schemas/investing_histories.schema';
 
 interface IGlobalCacheHolder {
   last_update_time?: number;
@@ -355,7 +357,6 @@ export class NftService {
     authorization: string,
   ): Promise<void> {
     if (authorization !== process.env.HELIUS_WEBHOOK_TOKEN) return;
-    console.log('transactions', JSON.stringify(transactions));
     await Promise.all(
       transactions.map(async (transaction) => {
         let signature = 'UNKNOWN';
@@ -477,34 +478,48 @@ export class NftService {
       transaction.events.compressed &&
       transaction.events.compressed.length > 0
     ) {
-      const compressedData = transaction.events.compressed[0];
-      const uri = compressedData?.metadata.uri;
-      const info = uri.split('metadata/cnft/')[1].split('/');
-      const seasonId = info[0];
-      const poolId = info[1];
-      const nftId = info[2].replace('.json', '');
-      const nftUpdateData: UpdateQuery<KyupadNft> = {
-        collection_address: compressedData?.metadata.collection.key,
-        nft_address: compressedData?.assetId,
-        owner_address: compressedData?.newLeafOwner,
-        signature: transaction.signature,
-      };
-      await this.kyupadNftModel.findByIdAndUpdate(
-        new mongoose.Types.ObjectId(nftId),
-        nftUpdateData,
-      );
-      await this.pushMintedAction({
-        input: {
-          action_type: EUserAction.NFT_MINTED,
-          season_id: seasonId,
-          pool_id: poolId,
-          nft_off_chain_id: nftId,
-          minted_wallet: nftUpdateData.owner_address,
-          action_at: new Date().toISOString(),
-        },
+      const bulkData: AnyBulkWriteOperation<KyupadNft>[] = [];
+      const appsyncInputs: AppsyncNftActionInput[] = [];
+      const assetIds: string[] = [];
+      transaction.events.compressed.forEach((compressedData) => {
+        const uri = compressedData?.metadata.uri;
+        const info = uri.split('metadata/cnft/')[1].split('/');
+        const seasonId = info[0];
+        const poolId = info[1];
+        const nftId = info[2].replace('.json', '');
+        assetIds.push(compressedData.assetId);
+        const nftUpdateData: UpdateQuery<KyupadNft> = {
+          collection_address: compressedData?.metadata.collection.key,
+          nft_address: compressedData?.assetId,
+          owner_address: compressedData?.newLeafOwner,
+          signature: transaction.signature,
+        };
+        bulkData.push({
+          updateOne: {
+            filter: { _id: new mongoose.Types.ObjectId(nftId) },
+            update: nftUpdateData,
+            upsert: true,
+          },
+        });
+        appsyncInputs.push({
+          input: {
+            action_type: EUserAction.NFT_MINTED,
+            season_id: seasonId,
+            pool_id: poolId,
+            nft_off_chain_id: nftId,
+            minted_wallet: nftUpdateData.owner_address,
+            action_at: new Date().toISOString(),
+          },
+        });
       });
+      await this.kyupadNftModel.bulkWrite(bulkData);
+      await Promise.all(
+        appsyncInputs.map(async (appsyncInput) => {
+          await this.pushMintedAction(appsyncInput);
+        }),
+      );
       this.logger.log(
-        `Sync [COMPRESSED_NFT_MINT] of signature [${transaction.signature}] id [${compressedData.assetId}] successful`,
+        `Sync [COMPRESSED_NFT_MINT] of signature [${transaction.signature}] ids [${JSON.stringify(assetIds)}] successful`,
       );
     }
   }
