@@ -15,7 +15,7 @@ class GenerateCnftMetaDataBody {
   ref_code?: string;
 }
 
-class GenerateCnftMetaDataPrivateBody extends GenerateCnftMetaDataBody {
+class GenerateCnftMetaDataPrivateBody {
   @ApiProperty({ required: true })
   @IsNotEmpty()
   api_key: string;
