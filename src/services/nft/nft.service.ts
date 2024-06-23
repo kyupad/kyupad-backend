@@ -355,6 +355,7 @@ export class NftService {
     authorization: string,
   ): Promise<void> {
     if (authorization !== process.env.HELIUS_WEBHOOK_TOKEN) return;
+    console.log('transactions', JSON.stringify(transactions));
     await Promise.all(
       transactions.map(async (transaction) => {
         let signature = 'UNKNOWN';
