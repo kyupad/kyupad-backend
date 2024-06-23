@@ -111,21 +111,9 @@ export class NftController {
     if (!body.api_key || body.api_key !== process.env.API_KEY) {
       throw new UnauthorizedException();
     }
-    if (isEmpty(body)) {
-      throw new BadRequestException('body is empty');
-    }
-
-    if (!body?.id) {
-      throw new BadRequestException('id is required');
-    }
-
-    if (typeof body?.seller_fee_basis_points !== 'number') {
-      throw new BadRequestException('seller_fee_basis_points is required');
-    }
-    if (!body?.wallet) throw new BadRequestException('wallet is required');
     const result = await this.nftService.generateCNftMetaData(
       body,
-      body.wallet,
+      body.minter_wallet,
     );
 
     return {
