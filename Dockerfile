@@ -1,6 +1,7 @@
+FROM node:20-alpine AS base
 # Use a multi-stage build to reduce the image size
 # Stage 1: Build the application
-FROM node:latest as builder
+FROM base as builder
 
 WORKDIR /app
 
@@ -13,7 +14,7 @@ COPY . .
 RUN npm run build
 
 # Stage 2: Setup the production environment
-FROM node:alpine
+FROM base as setup
 
 WORKDIR /app
 
