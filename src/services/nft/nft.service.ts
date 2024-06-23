@@ -21,6 +21,7 @@ import { ConfigService } from '@nestjs/config';
 import { S3Service } from '../aws/s3/s3.service';
 import {
   GenerateCnftMetaDataBody,
+  GenerateCnftMetaDataPrivateBody,
   GenerateCnftMetadataResult,
 } from '@/usecases/nft/nft.type';
 import { KyupadNft } from '@schemas/kyupad_nft.schema';
@@ -284,7 +285,10 @@ export class NftService {
   }
 
   async generateCNftMetaData(
-    { id, ref_code }: GenerateCnftMetaDataBody,
+    {
+      id,
+      ref_code,
+    }: GenerateCnftMetaDataPrivateBody | GenerateCnftMetaDataBody,
     wallet: string,
   ): Promise<GenerateCnftMetadataResult> {
     const season = await this.seasonService.activeSeason();
