@@ -1,5 +1,6 @@
 import { withBaseResponse } from '@/interfaces/common.interface';
 import { ApiProperty } from '@nestjs/swagger';
+import { IsNotEmpty } from 'class-validator';
 
 class GenerateCnftMetaDataBody {
   @ApiProperty()
@@ -14,12 +15,21 @@ class GenerateCnftMetaDataBody {
   ref_code?: string;
 }
 
-class GenerateCnftMetaDataPrivateBody extends GenerateCnftMetaDataBody {
+class GenerateCnftMetaDataPrivateBody {
   @ApiProperty({ required: true })
+  @IsNotEmpty()
   api_key: string;
 
   @ApiProperty({ required: true })
-  wallet: string;
+  @IsNotEmpty()
+  minter_wallet: string;
+
+  @ApiProperty()
+  @IsNotEmpty()
+  id: string;
+
+  @ApiProperty({ required: false })
+  ref_code?: string;
 }
 
 class GenerateCnftMetadataResult {
